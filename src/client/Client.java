@@ -94,7 +94,8 @@ public class Client {
         String servers = "";
         boolean secure = true;
         boolean relay = true;
-
+        System.setProperty("javax.net.ssl.trustStore", "clientKeyStore/myGreatName");
+			
         /*
              2- CLI parsing
          */

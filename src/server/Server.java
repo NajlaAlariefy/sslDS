@@ -126,9 +126,16 @@ public class Server {
 
         // OPEN SERVER FOR CONNECTIONS  
         //SECURE
-        
-System.setProperty("javax.net.ssl.keyStore", "/Users/najla/Desktop/EZshareP1/bin/keystore.jks ");
-System.setProperty("javax.net.ssl.keyStorePassword", "pass123"); 
+         
+                //Specify the keystore details (this can be specified as VM arguments as well)
+		//the keystore file contains an application's own certificate and private key
+		System.setProperty("javax.net.ssl.keyStore","/Users/najla/Desktop/EZshareP1/bin/keystore.jks");
+		//Password to access the private key from the keystore file
+		System.setProperty("javax.net.ssl.keyStorePassword","pass123");
+
+		// Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
+		//System.setProperty("javax.net.debug","all");
+		 
         SSLServerSocketFactory sslsocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
        try( SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);) {
            
