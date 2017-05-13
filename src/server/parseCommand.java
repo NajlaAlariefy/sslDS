@@ -13,44 +13,46 @@ import java.util.logging.Logger;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 
+import java.io.BufferedOutputStream;
+
 public class parseCommand {
 
     private static final Logger LOGGER = Logger.getLogger(parseCommand.class.getName());
-    public static void parseSecureCommand(JSONObject command, BufferedWriter output, int exchangeInterval) throws IOException, URISyntaxException, ParseException {
+    public static void parseSecureCommand(JSONObject command, BufferedWriter output, int exchangeInterval, BufferedOutputStream x) throws IOException, URISyntaxException, ParseException {
 
         JSONObject response = new JSONObject();
 
         if (command.containsKey("command")) {
             Server.debug("INFO" , command.get("command") + " received.");
             Server.debug("INFO" , "command message:" + command.toJSONString());
-           
-             
+              
             // THE COMMANDS GET PARSED IN serverCommands
-            serverCommands cmd = new serverCommands();
+            secureServerCommands cmd = new secureServerCommands();
             switch ((String) command.get("command")) {
                 case "EXCHANGE":
-                  //  cmd.exchange(command, output, exchangeInterval);
+                  cmd.exchange(command, output, exchangeInterval);
                     break;
                 case "FETCH":
-                  //  cmd.fetch(command, output);
+                  cmd.fetch(command,output,  x);
                     break;
                 case "PUBLISH":
-                  //  cmd.publish(command, output);
-                    break;
+                  cmd.publish(command, output);
+                   break;
                 case "QUERY":
-                    cmd.securequery(command, output);
+                    cmd.query(command, output);
                     break;
                 case "REMOVE":
-                   // cmd.remove(command, output);
+                    cmd.remove(command, output);
                     break;
                 case "SHARE":
-                   // cmd.share(command, output);
+                  cmd.share(command, output);
                     break;
 
                 default: { 
                     response.put("response", "error");
                     response.put("errorMessage", "invalid command");
-                    output.write(response.toJSONString());
+                    output.write(response.toJSONString() + '\n');
+                    output.flush();
                     Server.debug("SEND", response.toJSONString());
                      
 
@@ -61,7 +63,8 @@ public class parseCommand {
             //if the command is missing 
             response.put("response", "error");
             response.put("errorMessage", "missing or incorrect type for command");
-            output.write(response.toJSONString());
+            output.write(response.toJSONString()+ '\n');
+                    output.flush();
             Server.debug("SEND", response.toJSONString());
                     
         }

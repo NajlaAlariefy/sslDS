@@ -1,5 +1,8 @@
 package server;
+
 import Utilities.Resource;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import jdk.internal.dynalink.beans.StaticClass;
 
 import java.io.DataInputStream;
@@ -11,6 +14,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +37,17 @@ import org.apache.commons.cli.*;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+
+/*
+we were trying to test exchange
+and we noticed that we removed the server insecure port and we have to add it
+also, client is not receiving the exchange succces/ message
+
+yours,
+past Najla
+
+*/
+
 /*
 1- declare variables
 2- parse command line
@@ -62,12 +80,13 @@ public class Server {
 
     // VARIABLE DECLARATION
     public static String host = "localhost";
-    public static int port = 8000;
-    public static int sport = 3781;
+    public static int port = 5000;
+    public static int sport = 3000;//3000;
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     public static String secret = randomString();
     public static ArrayList serverResources = new ArrayList();
     public static ArrayList serverRecords = new ArrayList();
+    public static ArrayList secureServerRecords = new ArrayList();
     public static boolean debug = true;
     private static int counter = 0;    // identifies the user number connected
     static int exchangeInterval = 60000;     // a minute between each server exchange
@@ -126,63 +145,61 @@ public class Server {
 
         // OPEN SERVER FOR CONNECTIONS  
         //SECURE
-         
-                //Specify the keystore details (this can be specified as VM arguments as well)
-		//the keystore file contains an application's own certificate and private key
-		System.setProperty("javax.net.ssl.keyStore","/Users/najla/Desktop/EZshareP1/bin/keystore.jks");
-		//Password to access the private key from the keystore file
-		System.setProperty("javax.net.ssl.keyStorePassword","pass123");
-
-		// Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
-		//System.setProperty("javax.net.debug","all");
-		 
+        //Specify the keystore details (this can be specified as VM arguments as well)
+        //the keystore file contains an application's own certificate and private key
+        System.setProperty("javax.net.ssl.keyStore", "/home/alisha/sslDS/keystore.jks");
+        //Password to access the private key from the keystore file
+        System.setProperty("javax.net.ssl.keyStorePassword", "server123");
+        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
+        // Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
+        //System.setProperty("javax.net.debug","all");
         SSLServerSocketFactory sslsocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-       try( SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);) {
-           
-        
+        //  try( SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);) {
+        SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);
         // NON-SECURE   
         ServerSocketFactory factory = ServerSocketFactory.getDefault();
-       // try (ServerSocket server = factory.createServerSocket(port)) {
-            debug("INFO", "starting the EZShare Server");
-            debug("INFO", "using advertised hostname: " + host);
-            debug("INFO", "bound to port: " + port);
-            debug("INFO", "bound to SECURE port ONLY: " + sport);
-            debug("INFO", "using secret: " + secret);
-            debug("INFO", "interval exchange started ");
+        // try (ServerSocket server = factory.createServerSocket(port)) {
+        debug("INFO", "starting the EZShare Server");
+        debug("INFO", "using advertised hostname: " + host);
+        debug("INFO", "bound to port: " + port);
+        debug("INFO", "bound to SECURE port ONLY: " + sport);
+        debug("INFO", "using secret: " + secret);
+        debug("INFO", "interval exchange started ");
 
-            //WHILE TRUE, WAIT FOR ANY CLIENT          
-            while (true) {
+        //WHILE TRUE, WAIT FOR ANY CLIENT          
+        while (true) {
 
-                if (counter >= 1) {
-                    TimeUnit.SECONDS.sleep(1);
-                }
-                counter++;
-                serveClient sc = new serveClient();
-                //SECURE
-                SSLSocket sslclient = (SSLSocket) sslserversocket.accept();
-                //NON-SECURE
-               // Socket client = server.accept();
-                
-                debug("INFO", "client" + counter + " requesting connection");
-
-                //START A NEW THREAD FOR CONNECTION
-                Thread t = new Thread(() -> {
-                    try {
-                     //   sc.serveClient(client, counter, exchangeInterval);
-                        sc.serveSecureClient(sslclient, counter, exchangeInterval);
-                    } catch (URISyntaxException ex) {
-                        Logger.getLogger(Server.class.getName()).log(Level.ALL, null, ex);
-                    } catch (IOException ex) {
-                        Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                });
-                t.start();
+            if (counter >= 1) {
+                TimeUnit.SECONDS.sleep(1);
             }
+            counter++;
+            serveClient sc = new serveClient();
+            //SECURE
+            //NON-SECURE
+            // Socket client = server.accept();
+            //Accept client connection
+            SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
 
-        } catch (Exception e) {
-            debug("ERROR",e.toString());
+            debug("INFO", "client" + counter + " requesting connection");
+
+            //START A NEW THREAD FOR CONNECTION
+            Thread t = new Thread(() -> {
+                try {
+                    //   sc.serveClient(client, counter, exchangeInterval);
+                    sc.serveSecureClient(sslsocket, counter, exchangeInterval);
+                } catch (URISyntaxException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            });
+            t.start();
         }
 
+        /* } catch (Exception e) {
+            debug("ERROR",e.toString());
+        }
+         */
     }
 
     static void debug(String type, String message) {

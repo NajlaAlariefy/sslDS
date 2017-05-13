@@ -83,7 +83,7 @@ public class Client {
         int port = 3781;
         List<String> tags = Arrays.asList("");
 
-        String commandName = "QUERY";
+        String commandName = "EXCHANGE";
         String name = "";
         String description = "";
         String URI = "";
@@ -91,10 +91,10 @@ public class Client {
         String channel = "";
         String ezserver = "";
         String secret = "";
-        String servers = "";
+        String servers = "localhost:3000";
         boolean secure = true;
         boolean relay = true;
-        System.setProperty("javax.net.ssl.trustStore", "clientKeyStore/myGreatName");
+        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
 			
         /*
              2- CLI parsing
@@ -213,7 +213,7 @@ public class Client {
             }
         }
         if (cmd.hasOption("secure")) {
-            secure = true;
+           secure = true;// secure = Boolean.valueOf(cmd.getOptionValue("secure"));
         }
 
         //REMOVE LATER
@@ -226,12 +226,7 @@ public class Client {
                 SSLSocket cs = (SSLSocket) sslsocketfactory.createSocket(host, port);
                 InputStream sinput = cs.getInputStream();
                 OutputStream soutput = cs.getOutputStream();
-                
-                OutputStreamWriter securewriter = new OutputStreamWriter(soutput);
-                BufferedWriter bufferedwriter = new BufferedWriter(securewriter);
-                InputStreamReader securereader = new InputStreamReader(sinput);
-                BufferedReader bufferedreader = new BufferedReader(securereader);
-
+               
                 //  DataInputStream sinput = new DataInputStream(cs.getInputStream());
                 // DataOutputStream soutput = new DataOutputStream(cs.getOutputStream());
                 debug("INFO", "requesting a secure connection with server");
@@ -249,9 +244,27 @@ public class Client {
                     7 - SEND COMMAND TO SERVER
                 
                  */
+                
+                
+			//Create buffered reader to read input from the console
+			InputStream inputstream = cs.getInputStream();
+			InputStreamReader inputstreamreader = new InputStreamReader(inputstream);
+			BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+
+			//Create buffered writer to send data to the server
+			OutputStream outputstream = cs.getOutputStream();
+			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(outputstream);
+			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
+
+			
                 try {
 
-                    bufferedwriter.write(command.toJSONString());
+                   String string = null;
+			//Read line from the console
+			 	//Send data to the server
+				bufferedwriter.write(command.toJSONString()+ '\n');
+				bufferedwriter.flush();
+			 
                     debug("SEND", command.toJSONString());
                 } catch (Exception e) {
                     debug("ERROR", e.toString());
@@ -263,12 +276,13 @@ public class Client {
                 
                  */
                 while (true) {
+                       
                     String string = null;
                     if ((string = bufferedreader.readLine()) != null) {
-                        System.out.println("the input is available");
-                        String response = string;
+                         String response = string;
                         JSONParser parser = new JSONParser();
                         JSONObject JSONresponse = (JSONObject) parser.parse(response);
+                        
                         debug("RECEIVE", JSONresponse.toJSONString());
 
                         /*

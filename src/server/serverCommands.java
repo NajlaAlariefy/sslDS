@@ -6,6 +6,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
 import static java.lang.Math.random;
 import java.net.HttpURLConnection;
@@ -34,6 +36,8 @@ import java.util.logging.Logger;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
 public class serverCommands {
 
     private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
@@ -42,147 +46,6 @@ public class serverCommands {
     JSONObject resource = new JSONObject();
     String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
-    
-    public void securequery(JSONObject command, BufferedWriter output) throws URISyntaxException, IOException, ParseException {
-                       
-        resource = (JSONObject) command.get("resourceTemplate");
-        Boolean relay = Boolean.valueOf(command.get("relay").toString());
-        Resource resourceObject = (Resource) Resource.parseJson(resource);
-        ArrayList queryResult = new ArrayList();
-        JSONObject response = new JSONObject();
-
-        /* IF RELAY IS TRUE
-
-        go through servers
-            if it's online, send request
-            receive the response
-            add to queryResult
-
-         */
-        if (relay) {
-            if (Server.serverRecords.isEmpty()) {
-                //If the server Records list is empty
-                //Just don't do anything
-               Server.debug("RELAY INFO","server list is empty");
-            } else {
-
-                 Server.debug("RELAY INFO","server querying initiated");
-                String connect_host = "";
-                int connect_port;
-                JSONObject hostPort = new JSONObject(); 
-                JSONObject request = new JSONObject();
-                
-                // JSONArray to receive query results from each server 
-                request.put("command", "QUERY");
-                request.put("relay", "false");
-                resource.put("channel", "");
-                resource.put("owner", "");
-                request.put("resourceTemplate", resource);
-                //traverse through servers 
-
-                for (int i = 0; i < Server.serverRecords.size(); i++) {
-                    /*
-                    if ONLINE
-                    1- connect
-                    2- query for results
-                    3- store them in queryResults
-
-                     */
-
-                    Server.debug("RELAY INFO","connecting to server " + Server.serverRecords.get(i));
-
-                    hostPort = (JSONObject) Server.serverRecords.get(i);
-                    connect_host = hostPort.get("hostname").toString();
-                    Server.debug("RELAY INFO","hostname:" + connect_host);
-                    connect_port = Integer.parseInt(hostPort.get("port").toString()); 
-                    Server.debug("RELAY INFO","port:" + connect_port);
-
-                    //if the server isn't relaying to itself
-                    if (!(connect_host == Server.host && connect_port == Server.port)) {
-                        try {
-                            // Create connection with the selected server from the serverlist
-                            Socket socket = null;
-                            socket = new Socket(connect_host, connect_port);
-                            DataOutputStream serverOutput = new DataOutputStream(socket.getOutputStream());
-                            Server.debug("RELAY INFO","Connecting to server " + Server.serverRecords.get(i));
-                            output(request, serverOutput); 
-                            DataInputStream input = new DataInputStream(socket.getInputStream());
-                            // If there are query results:
-                            if (!receiveQuery(input).isEmpty()) {
-                                queryResult.addAll(receiveQuery(input));
-                                 Server.debug("RELAY RECEIVE", queryResult.toString());
-                           
-                            }
-
-                            // for each in Query results
-                            socket.close();
-                        } catch (Exception e) {
-                            Server.serverRecords.remove(i);
-                        }
-                    }
-                }
-
-            }
-
-        }
-
-        if (Server.serverResources.size() > 0) {
-            for (int i = 0; i < Server.serverResources.size(); i++) {
-
-                Resource queryResource = (Resource) Server.serverResources.get(i);
-
-                if (resourceObject.getChannel().equals(queryResource.getChannel())
-                        && (resourceObject.getUri().toString().equals("") || (resourceObject.getUri().toString().equals(queryResource.getUri().toString())))
-                        && (resourceObject.getOwner().toString().equals("") || resourceObject.getOwner().equals(queryResource.getOwner()))
-                        && (resourceObject.getTags().size() == 0 || resourceObject.getTags().stream().anyMatch(tag -> queryResource.getTags().contains(tag)))
-                        && ((resourceObject.getDescription().equals("") && resourceObject.getName().equals(""))
-                        || queryResource.getName().contains(resourceObject.getName())
-                        || queryResource.getDescription().contains(resourceObject.getDescription()))) {
-
-                    if (!(queryResource.getOwner().equals(""))) {
-                        queryResource.setOwner("*");
-                    }
-                    queryResult.add(queryResource);
-                }
-            }
-            // the owner and channel information in the original query are both set to "" in the forwarded query �
-            // relay field is set to false
-
-            if (queryResult.size() > 0) {
-
-                response.put("response", "success");
-                secureoutput(response, output);
-                JSONObject resource = new JSONObject();
-                Resource r = new Resource();
-
-                for (int i = 0; i < queryResult.size(); i++) {
-
-                    r = (Resource) queryResult.get(i);
-                    resource = Resource.toJson(r);
-
-                    secureoutput(resource, output);
-                }
-
-                response.put("resultSize", queryResult.size());
-
-            } else {
-                //This means that the resource doesn't match any of the server list
-                response.put("response", "error");
-                response.put("errorMessage", "invalid resourceTemplate");
-
-            }
-
-        } else {
-            //if there is no resource
-            response.put("response", "success");
-            response.put("resultSize", "0");
-
-        }
-       secureoutput(response, output);
-
-    }
-
-    
     
     
     
