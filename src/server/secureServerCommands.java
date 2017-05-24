@@ -42,6 +42,7 @@ import java.util.logging.Handler;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
+
 public class secureServerCommands {
 
     private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
@@ -50,9 +51,6 @@ public class secureServerCommands {
     JSONObject resource = new JSONObject();
     String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
 
-    
-    
-    
     public void exchange(JSONObject command, BufferedWriter output, int exchangeInterval) throws IOException {
 
         /*
@@ -92,11 +90,11 @@ public class secureServerCommands {
 
         2 - IF the server contains itself in the serverrecords list, then remove it
 
-        */
+         */
         JSONObject serverTraverser = new JSONObject();
         for (int i = 0; i < Server.secureServerRecords.size(); i++) {
-          serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
-          if (serverTraverser.get("hostname").equals(Server.host)) {
+            serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
+            if (serverTraverser.get("hostname").equals(Server.host)) {
                 if (serverTraverser.get("port").toString().equals(Integer.toString(Server.port))) {
                     Server.secureServerRecords.remove(i);
                 }
@@ -136,74 +134,60 @@ public class secureServerCommands {
             int index = Integer.valueOf(r.nextInt(size));
             randomServer = (JSONObject) Server.secureServerRecords.get(index);
 
-            
             /*
 
-                5 - Attemp connect to the randomly selected server
+                5 - Attempt connect to the randomly selected server
 
              */
             String connect_host = randomServer.get("hostname").toString();
             int connect_port = ((Long) randomServer.get("port")).intValue();
+            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+            // Create connection with the selected server from the serverlist
 
-            try {
-                      // Create connection with the selected server from the serverlist
-                        SSLSocketFactory factory = (SSLSocketFactory)SSLSocketFactory.getDefault();      
-                        SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port); 
-                              
-                            //Create buffered writer to send data to the server
-			OutputStream serverOutput = socket.getOutputStream();
-			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
-			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
- 
+            Server.debug("DEX", "1");
+            try (SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port)) {
+
+                //Create buffered writer to send data to the server
+                OutputStream serverOutput = socket.getOutputStream();
+                OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
+                BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
+
                 socket.setSoTimeout(exchangeInterval);
-                Server.debug("INFO","exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
                 /*
 
                 6 - Sending the list to the randomly selected server
 
                  */
 
-                 /*
-
-                8 - Filter out only unique records from secureServerRecords
-
-                 *//*
-                Set<String> setWithUniqueValues = new HashSet<>(Server.secureServerRecords);
-                ArrayList<String> listWithUniqueValues = new ArrayList<>(setWithUniqueValues);
-                Server.secureServerRecords = listWithUniqueValues;
-                
-                */
                 JSONObject listToRandomServer = new JSONObject();
                 listToRandomServer.put("command", "EXCHANGE");
                 listToRandomServer.put("serverList", Server.secureServerRecords);
-                 output(listToRandomServer, bufferedwriter);
+                output(listToRandomServer, bufferedwriter);
+                Server.debug("INFO", "exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
 
                 /*
 
                 7 - Display distinct servers in the secureServerRecords
 
                  */
-                
                 //Create buffered reader to read input from the console
-		InputStream inputFromRandom = socket.getInputStream();
-		InputStreamReader inputstreamreader = new InputStreamReader(inputFromRandom);
-		BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+                InputStream inputFromRandom = socket.getInputStream();
+                InputStreamReader inputstreamreader = new InputStreamReader(inputFromRandom);
+                BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
                 String message = bufferedreader.readLine();
-               
+
                 JSONParser parser = new JSONParser();
                 JSONObject JSONresponse = (JSONObject) parser.parse(message);
-                Server.debug("RECEIVE-SECURE-EXCHANGE",JSONresponse.toJSONString());
-
-               
+                Server.debug("RECEIVE-SECURE-EXCHANGE", JSONresponse.toJSONString());
 
             } catch (Exception e) {
-                
+
                 /*
 
                 9 - If the connection with the random server is not established remove serverRecord
 
                  */
-                Server.debug("INFO","secure connection with server " + connect_host + ":" + connect_port + " was not successful: " + e);
+                Server.debug("INFO", "secure connection with server " + connect_host + ":" + connect_port + " was not successful: " + e);
                 serverTraverser = new JSONObject();
                 for (int i = 0; i < Server.secureServerRecords.size(); i++) {
                     serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
@@ -212,7 +196,7 @@ public class secureServerCommands {
 
                     }
                 }
-              
+
             } finally {
                 response.put("response", "success");
                 output(response, output);
@@ -252,9 +236,9 @@ public class secureServerCommands {
                 response.put("errorMessage", "invalid resource.");
                 output(response, output);
             } else {
-               // Response if it is a success
+                // Response if it is a success
                 System.out.println("Server: File " + URI + " exists.");
-            resource.put("resourceSize", f.length());
+                resource.put("resourceSize", f.length());
                 response.put("response", "success");
                 output(response, output);
                 output(resource, output);
@@ -263,18 +247,14 @@ public class secureServerCommands {
                     RandomAccessFile byteFile = new RandomAccessFile(f, "r");
                     byte[] sendingBuffer = new byte[1024 * 1024];
                     int num;
-                     
-
-         
-
 
                     while ((num = byteFile.read(sendingBuffer)) > 0) {
-                        
-                        fileOutput.write(sendingBuffer,0, num);
+
+                        fileOutput.write(sendingBuffer, 0, num);
                         output.flush();
                     }
                     byteFile.close();
-                    response.remove("response","success");
+                    response.remove("response", "success");
                     response.put("resultSize", "1");
                     output(response, output);
 
@@ -284,7 +264,7 @@ public class secureServerCommands {
                 }
             }
         } else {
-           // Response if the file is not there on server
+            // Response if the file is not there on server
             response.put("response", "error");
             response.put("errorMessage", "Missing resource.");
             output(response, output);
@@ -304,8 +284,6 @@ public class secureServerCommands {
         (COMMENTED) 6 - The server sets its own host and port on the resource
         7 - resource is committed to server resources
          */
-        
-        
         // 0 -  if the resource field was not given
         JSONObject response = new JSONObject();
         if (!command.containsKey("resource")) {
@@ -362,7 +340,7 @@ public class secureServerCommands {
                 output(response, output);
                 return;
             }
-        } catch (Exception e) { 
+        } catch (Exception e) {
             response.put("response", "error");
             response.put("errorMessage", "cannot publish resource");
             output(response, output);
@@ -373,7 +351,7 @@ public class secureServerCommands {
         //5 - is primary (not event Channel/URI different Owner combo)
         Boolean isPrimaryKey = primaryKeyCheckAndRemove(resourcePublish);
         if (isPrimaryKey) {
-          
+
         } else {
             //if the resource provided is same Channel / URI but different Owner
             response.put("response", "error");
@@ -381,16 +359,14 @@ public class secureServerCommands {
 
         }
 
-            // 6 - The server sets its own host and port on the resource
-            // resourcePublish.setServer(Server.host + ":" + Server.port);
-            
-            // 7 - commit the resource to server's resources
-            Server.serverResources.add(resourcePublish);
-            response.put("response", "success");
-            output(response, output);
+        // 6 - The server sets its own host and port on the resource
+        // resourcePublish.setServer(Server.host + ":" + Server.port);
+        // 7 - commit the resource to server's resources
+        Server.serverResources.add(resourcePublish);
+        response.put("response", "success");
+        output(response, output);
     }
 
-    
     private boolean primaryKeyCheckAndRemove(Resource resource) {
         //get resource object
         //check for primary keys
@@ -416,9 +392,8 @@ public class secureServerCommands {
         return isPrimary;
     }
 
-    
     public void query(JSONObject command, BufferedWriter output) throws URISyntaxException, IOException, ParseException {
-                       
+
         resource = (JSONObject) command.get("resourceTemplate");
         Boolean relay = Boolean.valueOf(command.get("relay").toString());
         Resource resourceObject = (Resource) Resource.parseJson(resource);
@@ -437,15 +412,15 @@ public class secureServerCommands {
             if (Server.secureServerRecords.isEmpty()) {
                 //If the server Records list is empty
                 //Just don't do anything
-               Server.debug("RELAY INFO","server list is empty");
+                Server.debug("RELAY INFO", "server list is empty");
             } else {
 
-                 Server.debug("RELAY INFO","server querying initiated");
+                Server.debug("RELAY INFO", "server querying initiated");
                 String connect_host = "";
                 int connect_port;
-                JSONObject hostPort = new JSONObject(); 
+                JSONObject hostPort = new JSONObject();
                 JSONObject request = new JSONObject();
-                
+
                 // JSONArray to receive query results from each server 
                 request.put("command", "QUERY");
                 request.put("relay", "false");
@@ -463,42 +438,41 @@ public class secureServerCommands {
 
                      */
 
-                    Server.debug("RELAY INFO","connecting to server " + Server.secureServerRecords.get(i));
+                    Server.debug("RELAY INFO", "connecting to server " + Server.secureServerRecords.get(i));
 
                     hostPort = (JSONObject) Server.secureServerRecords.get(i);
                     connect_host = hostPort.get("hostname").toString();
-                    Server.debug("RELAY INFO","hostname:" + connect_host);
-                    connect_port = Integer.parseInt(hostPort.get("port").toString()); 
-                    Server.debug("RELAY INFO","port:" + connect_port);
+                    Server.debug("RELAY INFO", "hostname:" + connect_host);
+                    connect_port = Integer.parseInt(hostPort.get("port").toString());
+                    Server.debug("RELAY INFO", "port:" + connect_port);
 
                     //if the server isn't relaying to itself
                     if (!(connect_host == Server.host && connect_port == Server.port)) {
                         try {
                             // Create connection with the selected server from the serverlist
-                        SSLSocketFactory factory = (SSLSocketFactory)SSLSocketFactory.getDefault();      
-                        SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port); 
-                              
-                            //Create buffered writer to send data to the server
-			OutputStream serverOutput = socket.getOutputStream();
-			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
-			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
-//Create buffered reader to read input from the console
-			InputStream input = socket.getInputStream();
-			InputStreamReader inputstreamreader = new InputStreamReader(input);
-			BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+                            SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+                            SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port);
 
-                            
-                            Server.debug("RELAY INFO","Connecting to server " + Server.secureServerRecords.get(i));
-                            bufferedwriter.write(request.toJSONString() + '\n' );
+                            //Create buffered writer to send data to the server
+                            OutputStream serverOutput = socket.getOutputStream();
+                            OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
+                            BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
+//Create buffered reader to read input from the console
+                            InputStream input = socket.getInputStream();
+                            InputStreamReader inputstreamreader = new InputStreamReader(input);
+                            BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+
+                            Server.debug("RELAY INFO", "Connecting to server " + Server.secureServerRecords.get(i));
+                            bufferedwriter.write(request.toJSONString() + '\n');
                             bufferedwriter.flush();
                             //output(request, serverOutput); 
                             //REMOVE LATER DataInputStream input = new DataInputStream(socket.getInputStream());
-                            
+
                             // If there are query results:
                             if (!receiveQuery(bufferedreader).isEmpty()) {
                                 queryResult.addAll(receiveQuery(bufferedreader));
-                                 Server.debug("RELAY-secure-RECEIVE", queryResult.toString());
-                           
+                                Server.debug("RELAY-secure-RECEIVE", queryResult.toString());
+
                             }
 
                             // for each in Query results
@@ -538,8 +512,8 @@ public class secureServerCommands {
             if (queryResult.size() > 0) {
 
                 response.put("response", "success");
-               output.write(response.toJSONString() +  '\n');
-               output.flush();
+                output.write(response.toJSONString() + '\n');
+                output.flush();
                 JSONObject resource = new JSONObject();
                 Resource r = new Resource();
 
@@ -548,9 +522,9 @@ public class secureServerCommands {
                     r = (Resource) queryResult.get(i);
                     resource = Resource.toJson(r);
 
-                    output.write(response.toJSONString() +  '\n');
+                    output.write(response.toJSONString() + '\n');
                     output.flush();
-              
+
                 }
 
                 response.put("resultSize", queryResult.size());
@@ -568,12 +542,10 @@ public class secureServerCommands {
             response.put("resultSize", "0");
 
         }
-       output.write(response.toJSONString() +  '\n');
-output.flush();
+        output.write(response.toJSONString() + '\n');
+        output.flush();
     }
 
-    
-    
     public void remove(JSONObject command, BufferedWriter output) throws URISyntaxException, IOException {
 
         if (command.containsKey("resource")) {
@@ -705,7 +677,7 @@ output.flush();
         String firstResponse = input.readLine();
         JSONParser parser = new JSONParser();
         JSONObject JSONresponse = (JSONObject) parser.parse(firstResponse);
-        
+
         System.out.println("[RECEIVE] :" + JSONresponse.get("response"));
 
         Integer size = -1;
@@ -720,7 +692,7 @@ output.flush();
             while (true) {
 
                 String s = null;
-                if ((s = input.readLine()) !=null) {
+                if ((s = input.readLine()) != null) {
                     String serverResponse = s;
                     JSONObject response = (JSONObject) parser.parse(serverResponse);
                     //juST TO make sure we're receiving a resource
@@ -750,10 +722,10 @@ output.flush();
     }
 
     private void output(JSONObject response, BufferedWriter output) throws IOException {
-           Server.debug("SECURE-PORT-SEND",response.toJSONString());
-        output.write(response.toJSONString());
-        output.flush();
 
+        output.write(response.toJSONString() + '\n');
+        output.flush();
+        Server.debug("SECURE-SEND", response.toJSONString());
     }
-    
+
 }

@@ -50,20 +50,19 @@ public class serveClient {
            // bufferedwriter.flush();
 				 
             //THIS WILL RUN UNTIL THE SOCKET IS CLOSED BY THE CLIENT'S SIDE
-            while (true) {
+            //while (true) {
                 String response = null;
-                
+                                   
                 if ((response=bufferedreader.readLine()) != null) {
                     // Attempt to convert read data to JSON
                      JSONObject command = (JSONObject) parser.parse(response);
-                   Server.debug("RECEIVE" ,"input received:" + command.toJSONString());
+                   Server.debug("DEBUGGING" ,"input received:" + command.toJSONString());
          
                     parseCommand pc = new parseCommand();
                     pc.parseSecureCommand(command, bufferedwriter,exchangeInterval,outStream);
-                   
-
+                    clientSocket.close();
                 }
-            }
+            //}
 
         } catch (IOException | ParseException e) {
           Server.debug("ERROR secureClient",   e.toString());
@@ -89,7 +88,6 @@ public class serveClient {
                     JSONObject command = (JSONObject) parser.parse(input.readUTF());
                     parseCommand pc = new parseCommand();
                     pc.parseCommand(command, output,exchangeInterval);
-                   
 
                 }
             }

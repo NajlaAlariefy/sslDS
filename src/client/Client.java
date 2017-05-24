@@ -91,7 +91,7 @@ public class Client {
         String channel = "";
         String ezserver = "";
         String secret = "";
-        String servers = "localhost:3000";
+        String servers = "localhost:8000";// localhost:8888";
         boolean secure = true;
         boolean relay = true;
         System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
@@ -255,17 +255,17 @@ public class Client {
 			OutputStream outputstream = cs.getOutputStream();
 			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(outputstream);
 			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
-
-			
+ 		
                 try {
 
                    String string = null;
 			//Read line from the console
 			 	//Send data to the server
+                                         debug("SEND", command.toJSONString());
 				bufferedwriter.write(command.toJSONString()+ '\n');
-				bufferedwriter.flush();
-			 
-                    debug("SEND", command.toJSONString());
+			        bufferedwriter.flush();
+			        
+           
                 } catch (Exception e) {
                     debug("ERROR", e.toString());
                 }
@@ -278,11 +278,13 @@ public class Client {
                 while (true) {
                        
                     String string = null;
+                    
                     if ((string = bufferedreader.readLine()) != null) {
+                        
                          String response = string;
                         JSONParser parser = new JSONParser();
                         JSONObject JSONresponse = (JSONObject) parser.parse(response);
-                        
+                                  
                         debug("RECEIVE", JSONresponse.toJSONString());
 
                         /*
@@ -301,8 +303,11 @@ public class Client {
                                 clientCommand.securequery(JSONresponse, bufferedreader);
                                 break;
                         }
+                        cs.close();
                         break;
+                        
                     }
+                    
 
                 }
 
@@ -322,7 +327,8 @@ public class Client {
                     /*
                     6 -  converting INPUT to JSON OBJECT using Resource class's function (inputToJSON)
                      */
-                    JSONObject command = new JSONObject();
+        
+                    JSONObject command = new JSONObject(); 
                     Resource resource = new Resource();
                     command = resource.inputToJSON(commandName, name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
 
@@ -331,6 +337,7 @@ public class Client {
                     7 - SEND COMMAND TO SERVER
                 
                      */
+                    
                     output.writeUTF(command.toJSONString());
                     debug("SEND", command.toJSONString());
 
@@ -363,19 +370,21 @@ public class Client {
                                     clientCommand.query(JSONresponse, input);
                                     break;
                             }
+                            socket.close();
+                     
                             break;
+                            
                         }
 
                     }
                 } catch (UnknownHostException e) {
-                    e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (ParseException ex) {
                     System.out.println(ex);
                     Logger.getLogger(Client.class.getName()).log(Level.ALL, null, ex);
                 } finally {
-                    // socket.close();
+                   //socket.close();
                 }
             }
 

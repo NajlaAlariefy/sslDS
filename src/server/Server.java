@@ -39,6 +39,14 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /*
+
+we want to check the connection if it's secure or not in the exchange command. It just breaks out if it times out. 
+After that we need to exchange/query/interval
+Then we need to set the certificate whenever we receiver it
+
+That's all
+
+----
 we were trying to test exchange
 and we noticed that we removed the server insecure port and we have to add it
 also, client is not receiving the exchange succces/ message
@@ -80,8 +88,8 @@ public class Server {
 
     // VARIABLE DECLARATION
     public static String host = "localhost";
-    public static int port = 5000;
-    public static int sport = 3000;//3000;
+    public static int port = 8000;
+    public static int sport = 8888;
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     public static String secret = randomString();
     public static ArrayList serverResources = new ArrayList();
@@ -90,7 +98,7 @@ public class Server {
     public static boolean debug = true;
     private static int counter = 0;    // identifies the user number connected
     static int exchangeInterval = 60000;     // a minute between each server exchange
-    static int connectionIntervalLimit = 1000;    // a second between each connection
+    static int connectionIntervalLimit = 10000;    // a second between each connection
 
     public static void main(String[] args) throws org.apache.commons.cli.ParseException, InterruptedException, IOException {
 
@@ -141,30 +149,44 @@ public class Server {
         }
 
         Timer timer = new Timer();
-        timer.schedule(new serverExchanges(), 0, exchangeInterval);
+       // timer.schedule(new serverExchanges(), 0, exchangeInterval);
 
-        // OPEN SERVER FOR CONNECTIONS  
-        //SECURE
-        //Specify the keystore details (this can be specified as VM arguments as well)
-        //the keystore file contains an application's own certificate and private key
-        System.setProperty("javax.net.ssl.keyStore", "/home/alisha/sslDS/keystore.jks");
-        //Password to access the private key from the keystore file
-        System.setProperty("javax.net.ssl.keyStorePassword", "server123");
-        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
-        // Enable debugging to view the handshake and communication which happens between the SSLClient and the SSLServer
-        //System.setProperty("javax.net.debug","all");
-        SSLServerSocketFactory sslsocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
-        //  try( SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);) {
-        SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);
-        // NON-SECURE   
-        ServerSocketFactory factory = ServerSocketFactory.getDefault();
-        // try (ServerSocket server = factory.createServerSocket(port)) {
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        // OPEN SERVER FOR CONNECTIONS 
         debug("INFO", "starting the EZShare Server");
         debug("INFO", "using advertised hostname: " + host);
         debug("INFO", "bound to port: " + port);
         debug("INFO", "bound to SECURE port ONLY: " + sport);
         debug("INFO", "using secret: " + secret);
         debug("INFO", "interval exchange started ");
+        
+        
+        
+        
+        //SECURE
+        //Specify the keystore details (this can be specified as VM arguments as well)
+        //the keystore file contains an application's own certificate and private key
+        System.setProperty("javax.net.ssl.keyStore", "/home/alisha/sslDS/keystore.jks");
+        System.setProperty("javax.net.ssl.keyStorePassword", "server123");
+        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
+        SSLServerSocketFactory sslsocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
+        SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);
+        
+        
+
+        // NON-SECURE   
+        ServerSocketFactory factory = ServerSocketFactory.getDefault();
+        ServerSocket server = factory.createServerSocket(port);
+
 
         //WHILE TRUE, WAIT FOR ANY CLIENT          
         while (true) {
@@ -174,16 +196,12 @@ public class Server {
             }
             counter++;
             serveClient sc = new serveClient();
+            
+            
             //SECURE
-            //NON-SECURE
-            // Socket client = server.accept();
-            //Accept client connection
             SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
 
-            debug("INFO", "client" + counter + " requesting connection");
-
-            //START A NEW THREAD FOR CONNECTION
-            Thread t = new Thread(() -> {
+            Thread ts = new Thread(() -> {
                 try {
                     //   sc.serveClient(client, counter, exchangeInterval);
                     sc.serveSecureClient(sslsocket, counter, exchangeInterval);
@@ -193,7 +211,25 @@ public class Server {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
+            ts.start();
+            
+            
+            
+            //NON-SECURE
+            Socket client = server.accept();
+             Thread t = new Thread(() -> {
+                try {
+                       sc.serveClient(client, counter, exchangeInterval);
+                  
+                } catch (URISyntaxException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            });
             t.start();
+            debug("INFO", "client" + counter + " requesting connection");
+         
         }
 
         /* } catch (Exception e) {
