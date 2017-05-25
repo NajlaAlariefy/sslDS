@@ -143,16 +143,17 @@ public class secureServerCommands {
             int connect_port = ((Long) randomServer.get("port")).intValue();
             SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
             // Create connection with the selected server from the serverlist
-
-            Server.debug("DEX", "1");
-            try (SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port)) {
-
+            
+            
+            Boolean checkSecure = false;
+             try (SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port)) {
+                  
                 //Create buffered writer to send data to the server
                 OutputStream serverOutput = socket.getOutputStream();
                 OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
                 BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
 
-                socket.setSoTimeout(exchangeInterval);
+                
                 /*
 
                 6 - Sending the list to the randomly selected server
@@ -162,9 +163,11 @@ public class secureServerCommands {
                 JSONObject listToRandomServer = new JSONObject();
                 listToRandomServer.put("command", "EXCHANGE");
                 listToRandomServer.put("serverList", Server.secureServerRecords);
+                Server.debug("INFO", Server.secureServerRecords.toString());
+                socket.setSoTimeout(2000);
                 output(listToRandomServer, bufferedwriter);
                 Server.debug("INFO", "exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
-
+                checkSecure = true;
                 /*
 
                 7 - Display distinct servers in the secureServerRecords
@@ -179,6 +182,8 @@ public class secureServerCommands {
                 JSONParser parser = new JSONParser();
                 JSONObject JSONresponse = (JSONObject) parser.parse(message);
                 Server.debug("RECEIVE-SECURE-EXCHANGE", JSONresponse.toJSONString());
+               
+                socket.close();
 
             } catch (Exception e) {
 
@@ -187,6 +192,7 @@ public class secureServerCommands {
                 9 - If the connection with the random server is not established remove serverRecord
 
                  */
+                if (!checkSecure){
                 Server.debug("INFO", "secure connection with server " + connect_host + ":" + connect_port + " was not successful: " + e);
                 serverTraverser = new JSONObject();
                 for (int i = 0; i < Server.secureServerRecords.size(); i++) {
@@ -195,12 +201,14 @@ public class secureServerCommands {
                         Server.secureServerRecords.remove(i);
 
                     }
-                }
-
+                }}               
             } finally {
-                response.put("response", "success");
+                   
+                 response.put("response", "success");
                 output(response, output);
+                
             }
+
 
         }
 
@@ -457,7 +465,7 @@ public class secureServerCommands {
                             OutputStream serverOutput = socket.getOutputStream();
                             OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
                             BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
-//Create buffered reader to read input from the console
+                            //Create buffered reader to read input from the console
                             InputStream input = socket.getInputStream();
                             InputStreamReader inputstreamreader = new InputStreamReader(input);
                             BufferedReader bufferedreader = new BufferedReader(inputstreamreader);

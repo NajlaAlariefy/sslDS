@@ -40,6 +40,13 @@ import org.json.simple.parser.ParseException;
 
 /*
 
+- implmented interval exchange for secure, not sure if it works well (tested exchange first, it seems to be working)
+- still want to concurrently accept two types of threads
+- still need to test query relay and exchange 
+
+
+-----
+
 we want to check the connection if it's secure or not in the exchange command. It just breaks out if it times out. 
 After that we need to exchange/query/interval
 Then we need to set the certificate whenever we receiver it
@@ -70,7 +77,11 @@ past Najla
 8- process commands (from serverCommands) and return response ---------serverCommands.JAVA
 9- still take in any commands while true                        ------- serveClient.JAVA
 
+
+*********When debugging exchange, server doesn't expects two or more threads in a row.*********
  */
+
+
 public class Server {
 
     private static String randomString() {
@@ -98,7 +109,7 @@ public class Server {
     public static boolean debug = true;
     private static int counter = 0;    // identifies the user number connected
     static int exchangeInterval = 60000;     // a minute between each server exchange
-    static int connectionIntervalLimit = 10000;    // a second between each connection
+    static int connectionIntervalLimit = 1000;    // a second between each connection
 
     public static void main(String[] args) throws org.apache.commons.cli.ParseException, InterruptedException, IOException {
 
@@ -149,9 +160,23 @@ public class Server {
         }
 
         Timer timer = new Timer();
-       // timer.schedule(new serverExchanges(), 0, exchangeInterval);
+       timer.schedule(new serverExchanges(), 0, exchangeInterval);
+
+           class serverSecureExchanges extends TimerTask {
+
+            public void run() {
+                serverInteractions si = new serverInteractions();
+                try {
+                    si.secureExchange();
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
 
         
+       timer.schedule(new serverSecureExchanges(), 0, exchangeInterval);
+
         
         
         
@@ -191,20 +216,26 @@ public class Server {
         //WHILE TRUE, WAIT FOR ANY CLIENT          
         while (true) {
 
-            if (counter >= 1) {
-                TimeUnit.SECONDS.sleep(1);
-            }
-            counter++;
+            System.out.println("inside while");
+           
             serveClient sc = new serveClient();
-            
-            
+            counter++;
+            debug("INFO", "client" + counter + " requesting connection");
+             
             //SECURE
-            SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
-
+            
+           SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
+             sslsocket.setSoTimeout(5000);
+                         
             Thread ts = new Thread(() -> {
+                             
+
                 try {
-                    //   sc.serveClient(client, counter, exchangeInterval);
-                    sc.serveSecureClient(sslsocket, counter, exchangeInterval);
+                                   
+
+                    sc.serveSecureClient(sslsocket, counter, connectionIntervalLimit);
+                                  
+
                 } catch (URISyntaxException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -212,14 +243,17 @@ public class Server {
                 }
             });
             ts.start();
+          
+           
             
             
             
             //NON-SECURE
-            Socket client = server.accept();
+           Socket client = server.accept();
+           // client.setSoTimeout(5000);
              Thread t = new Thread(() -> {
                 try {
-                       sc.serveClient(client, counter, exchangeInterval);
+                       sc.serveClient(client, counter, connectionIntervalLimit);
                   
                 } catch (URISyntaxException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -228,7 +262,8 @@ public class Server {
                 }
             });
             t.start();
-            debug("INFO", "client" + counter + " requesting connection");
+             
+           
          
         }
 

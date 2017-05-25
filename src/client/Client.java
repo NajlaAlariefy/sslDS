@@ -91,9 +91,9 @@ public class Client {
         String channel = "";
         String ezserver = "";
         String secret = "";
-        String servers = "localhost:8000";// localhost:8888";
+        String servers = "localhost:8888";
         boolean secure = true;
-        boolean relay = true;
+        boolean relay = false;
         System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
 			
         /*
@@ -223,7 +223,8 @@ public class Client {
 
             if (secure) {
                 SSLSocketFactory sslsocketfactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                SSLSocket cs = (SSLSocket) sslsocketfactory.createSocket(host, port);
+                try(SSLSocket cs = (SSLSocket) sslsocketfactory.createSocket(host, port)){
+               
                 InputStream sinput = cs.getInputStream();
                 OutputStream soutput = cs.getOutputStream();
                
@@ -243,8 +244,7 @@ public class Client {
                 
                     7 - SEND COMMAND TO SERVER
                 
-                 */
-                
+                 */ 
                 
 			//Create buffered reader to read input from the console
 			InputStream inputstream = cs.getInputStream();
@@ -256,7 +256,7 @@ public class Client {
 			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(outputstream);
 			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
  		
-                try {
+                 
 
                    String string = null;
 			//Read line from the console
@@ -266,9 +266,7 @@ public class Client {
 			        bufferedwriter.flush();
 			        
            
-                } catch (Exception e) {
-                    debug("ERROR", e.toString());
-                }
+               
 
                 /*
                     
@@ -277,10 +275,10 @@ public class Client {
                  */
                 while (true) {
                        
-                    String string = null;
-                    
+                      string = null;
+                    System.out.println("1");
                     if ((string = bufferedreader.readLine()) != null) {
-                        
+                        System.out.println("2");
                          String response = string;
                         JSONParser parser = new JSONParser();
                         JSONObject JSONresponse = (JSONObject) parser.parse(response);
@@ -310,11 +308,13 @@ public class Client {
                     
 
                 }
-
+ } catch (Exception e) {
+                    debug("ERRORhere", e.toString());
+                }
             } else {
 
                 try (Socket socket = new Socket(host, port);) {
-
+     
                     /*
                     5 -  INITIATING CONNECTION REQUEST
                      */

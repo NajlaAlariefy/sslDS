@@ -1,4 +1,3 @@
-
 package server;
 
 import java.io.BufferedOutputStream;
@@ -27,67 +26,72 @@ import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
 public class serveClient {
-    private static final Logger LOGGER=Logger.getLogger(serveClient.class.getName());
 
-     public static void serveSecureClient(SSLSocket client, Integer counter,int exchangeInterval) throws URISyntaxException, IOException {
-          
+    private static final Logger LOGGER = Logger.getLogger(serveClient.class.getName());
+
+    public static void serveSecureClient(SSLSocket client, Integer counter, int exchangeInterval) throws URISyntaxException, IOException {
+
         try (SSLSocket clientSocket = client) {
-             JSONParser parser = new JSONParser(); 
-                    //Create buffered reader to read input from the console
-			InputStream input = clientSocket.getInputStream();
-			InputStreamReader inputstreamreader = new InputStreamReader(input);
-			BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+            System.out.println("5");
 
-			//Create buffered writer to send data to the server
-			OutputStream output = clientSocket.getOutputStream();
-			OutputStreamWriter outputstreamwriter = new OutputStreamWriter(output);
-			BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
-     BufferedOutputStream outStream = new BufferedOutputStream(clientSocket.getOutputStream());
+            JSONParser parser = new JSONParser();
+            System.out.println("6");
+            //clientSocket.setSoTimeout(5000);  **********uncomment it positively**********
+            //Create buffered reader to read input from the console
+            InputStream input = clientSocket.getInputStream();
+            System.out.println("7");
+            InputStreamReader inputstreamreader = new InputStreamReader(input);
+            System.out.println("8");
+            BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
+            System.out.println("9");
+            //Create buffered writer to send data to the server
+            OutputStream output = clientSocket.getOutputStream();
+            OutputStreamWriter outputstreamwriter = new OutputStreamWriter(output);
+            BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
+            BufferedOutputStream outStream = new BufferedOutputStream(clientSocket.getOutputStream());
 
-                
-            Server.debug("INFO" ,"secure connection with client " + counter + " established.");
-           // bufferedwriter.write("hi" + '\n');
-           // bufferedwriter.flush();
-				 
+            Server.debug("INFO", "secure connection with client " + counter + " established.");
+            // bufferedwriter.write("hi" + '\n');
+            // bufferedwriter.flush();
+
             //THIS WILL RUN UNTIL THE SOCKET IS CLOSED BY THE CLIENT'S SIDE
             //while (true) {
-                String response = null;
-                                   
-                if ((response=bufferedreader.readLine()) != null) {
-                    // Attempt to convert read data to JSON
-                     JSONObject command = (JSONObject) parser.parse(response);
-                   Server.debug("DEBUGGING" ,"input received:" + command.toJSONString());
-         
-                    parseCommand pc = new parseCommand();
-                    pc.parseSecureCommand(command, bufferedwriter,exchangeInterval,outStream);
-                    clientSocket.close();
-                }
+            String response = null;
+
+            if ((response = bufferedreader.readLine()) != null) {
+                // Attempt to convert read data to JSON
+                JSONObject command = (JSONObject) parser.parse(response);
+
+                parseCommand pc = new parseCommand();
+                pc.parseSecureCommand(command, bufferedwriter, exchangeInterval, outStream);
+                //clientSocket.close();
+            }
             //}
 
         } catch (IOException | ParseException e) {
-          Server.debug("ERROR secureClient",   e.toString());
+            Server.debug("ERROR secureClient", e.toString());
         }
     }
 
-    public static void serveClient(Socket client, Integer counter,int exchangeInterval) throws URISyntaxException, IOException {
-    	boolean debug=true;
-            Handler consoleHandler=null;
-            consoleHandler=new ConsoleHandler();
-            LOGGER.addHandler(consoleHandler);
-            consoleHandler.setLevel(Level.ALL);
-            LOGGER.setLevel(Level.ALL);
+    public static void serveClient(Socket client, Integer counter, int exchangeInterval) throws URISyntaxException, IOException {
+        boolean debug = true;
+        Handler consoleHandler = null;
+        consoleHandler = new ConsoleHandler();
+        LOGGER.addHandler(consoleHandler);
+        consoleHandler.setLevel(Level.ALL);
+        LOGGER.setLevel(Level.ALL);
         try (Socket clientSocket = client) {
             JSONParser parser = new JSONParser();
             DataInputStream input = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
-            Server.debug("INFO" ,"connection with client " + counter + " established.");
+            Server.debug("INFO", "connection with client " + counter + " established.");
             //THIS WILL RUN UNTIL THE SOCKET IS CLOSED BY THE CLIENT'S SIDE
             while (true) {
                 if (input.available() > 0) {
                     // Attempt to convert read data to JSON
                     JSONObject command = (JSONObject) parser.parse(input.readUTF());
                     parseCommand pc = new parseCommand();
-                    pc.parseCommand(command, output,exchangeInterval);
+                    pc.parseCommand(command, output, exchangeInterval);
 
                 }
             }
