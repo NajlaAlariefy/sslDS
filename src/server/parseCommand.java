@@ -47,7 +47,15 @@ public class parseCommand {
                 case "SHARE":
                   cmd.share(command, output);
                     break;
-
+                 case "SUBSCRIBE":
+				cmd.subscribe(command, output);
+				break;
+			case "UNSUBSCRIBE":
+				cmd.unsubscribe(command,output);
+				synchronized(Server.unsubscribe){
+					Server.unsubscribe.notifyAll();
+				}
+				break;
                 default: { 
                     response.put("response", "error");
                     response.put("errorMessage", "invalid command");
@@ -105,7 +113,15 @@ public class parseCommand {
                 case "SHARE":
                     cmd.share(command, output);
                     break;
-
+                    case "SUBSCRIBE":
+				cmd.subscribe(command, output);
+				break;
+			case "UNSUBSCRIBE":
+				cmd.unsubscribe(command,output);
+				synchronized(Server.unsubscribe){
+					Server.unsubscribe.notifyAll();
+				}
+				break;
                 default: { 
                     response.put("response", "error");
                     response.put("errorMessage", "invalid command");

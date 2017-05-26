@@ -81,98 +81,111 @@ public class Resource {
     2 -  must not start or end with white space. (DONE, but not with tags)
     3 -  As well, the Owner cannot be the character "*". (DONE)
     */
-    public static JSONObject inputToJSON(String commandname,String name , String owner, String description, String channel, String uri, List<String> tags, String ezserver, String secret, Boolean relay,  String servers) throws IOException, URISyntaxException{
-            
-          String[] serverList = servers.split(",");
-          JSONArray serverArray = new JSONArray();
-           
-            for (int i = 0; i < serverList.length; i++) {
-                JSONObject serverObject = new JSONObject();
-                String hostname = serverList[i].split(":")[0].trim();
-                  try { 
-                    int port = Integer.valueOf(serverList[i].split(":")[1].trim());
-                    serverObject.put("hostname", hostname);
-                    serverObject.put("port", port);
-                    serverArray.add(serverObject); 
-                  }catch ( Exception e){
-                    serverObject.put("hostname", hostname);
-                    serverObject.put("port", "invalid");
-                    serverArray.add(serverObject); 
-                  }     
-            
-          }
-              
-            
-            /*
-            
+   
+public static JSONObject inputToJSON(String commandname,int id,String name , String owner, String description, String channel, String uri, List<String> tags, String ezserver, String secret, Boolean relay,  String servers ) throws IOException, URISyntaxException{
+
+		String[] serverList = servers.split(",");
+		JSONArray serverArray = new JSONArray();
+
+		for (int i = 0; i < serverList.length; i++) {
+			JSONObject serverObject = new JSONObject();
+			String hostname = serverList[i].split(":")[0].trim();
+			try { 
+				int port = Integer.valueOf(serverList[i].split(":")[1].trim());
+				serverObject.put("hostname", hostname);
+				serverObject.put("port", port);
+				serverArray.add(serverObject); 
+			}catch ( Exception e){
+				serverObject.put("hostname", hostname);
+				serverObject.put("port", "invalid");
+				serverArray.add(serverObject); 
+			}     
+
+		}
+
+
+		/*
+
             Trimming white space silently
-            
-            */
-            name = name.trim();
-            owner = owner.trim();
-            description = description.trim();
-            channel = channel.trim();
-            ezserver = ezserver.trim();         
-            uri = uri.trim(); 
+
+		 */
+		name = name.trim();
+		owner = owner.trim();
+		description = description.trim();
+		channel = channel.trim();
+		ezserver = ezserver.trim();         
+		uri = uri.trim(); 
 
 
 
-            /*
-            
+		/*
+
             Dealing with owner asterisk
             Dealing with null values silently
-            
-            */            
-            owner = owner.replace("*", "");             
-            owner = owner.replace("\0", ""); 
-            channel = channel.replace("\0", ""); 
-            name = name.replace("\0", ""); 
-            description = description.replace("\0", "");           
-            uri = uri.replace("\0", ""); 
-           ezserver = ezserver.replace("\0", ""); 
-            
-            Resource resource = new Resource();
-            resource.setName(name);
-            resource.setUri(new URI(uri));
-            resource.setDescription(description);
-            resource.setChannel(channel);
-            resource.setOwner(owner);
-            resource.setTags(tags);
-            resource.setServer(ezserver);
-            JSONObject resourceObj = Resource.toJson(resource);
-            JSONObject request = new JSONObject();
-            
-            request.put("command", commandname);
-             
-            switch(commandname){
-                case "PUBLISH":
-                case "REMOVE":
-                {  request.put("resource", resourceObj);
-                break;}
-                
-                case "SHARE":
-                {   request.put("secret", secret);
-                    request.put("resource", resourceObj); 
-                 break;
-                }
-                case "QUERY":
-                {   request.put("relay", relay);
-                    request.put("resourceTemplate", resourceObj);
-                    break;
-                } 
-                case "FETCH":
-                {   request.put("resourceTemplate", resourceObj); 
-                    break;
-                }
-                case "EXCHANGE":
-                {   request.put("serverList", serverArray);
-                    break;
-                }
-                default:
-                 // no need for message:  Client.debug("INFO" , "command name is invalid");  
-            }  
-            return (request);
-    }
+
+		 */            
+		owner = owner.replace("*", "");             
+		owner = owner.replace("\0", ""); 
+		channel = channel.replace("\0", ""); 
+		name = name.replace("\0", ""); 
+		description = description.replace("\0", "");           
+		uri = uri.replace("\0", ""); 
+		ezserver = ezserver.replace("\0", ""); 
+
+		Resource resource = new Resource();
+		resource.setName(name);
+		try{
+			resource.setUri(new URI(uri));
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+		}
+		resource.setDescription(description);
+		resource.setChannel(channel);
+		resource.setOwner(owner);
+		resource.setTags(tags);
+		resource.setServer(ezserver);
+		JSONObject resourceObj = Resource.toJson(resource);
+		JSONObject request = new JSONObject();
+
+		request.put("command", commandname);
+
+		switch(commandname){
+		case "PUBLISH":
+		case "REMOVE":
+		{  request.put("resource", resourceObj);
+		break;}
+
+		case "SHARE":
+		{   request.put("secret", secret);
+		request.put("resource", resourceObj); 
+		break;
+		}
+		case "QUERY":
+		{   request.put("relay", relay);
+		request.put("resourceTemplate", resourceObj);
+		break;
+		} 
+		case "FETCH":
+		{   request.put("resourceTemplate", resourceObj); 
+		break;
+		}
+		case "EXCHANGE":
+		{   request.put("serverList", serverArray);
+		break;
+		}
+		case "SUBSCRIBE":
+		{
+			//request.put("command","SUBSCRIBE");
+			request.put("relay",true);
+			request.put("id", id+"");
+			request.put("resourceTemplate",resourceObj);
+		}
+		default:
+			// no need for message:  Client.debug("INFO" , "command name is invalid");  
+		}  
+		return (request);
+	}
 
      
     

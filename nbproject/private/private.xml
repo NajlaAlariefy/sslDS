@@ -5,9 +5,9 @@
         <group>
             <file>file:/home/alisha/sslDS/src/server/serveClient.java</file>
             <file>file:/home/alisha/sslDS/src/server/secureServerCommands.java</file>
+            <file>file:/home/alisha/sslDS/src/server/serverInteractions.java</file>
             <file>file:/home/alisha/sslDS/src/client/Client.java</file>
             <file>file:/home/alisha/sslDS/src/server/Server.java</file>
-            <file>file:/home/alisha/sslDS/src/server/parseCommand.java</file>
         </group>
     </open-files>
 </project-private>

@@ -61,9 +61,9 @@ also, client is not receiving the exchange succces/ message
 yours,
 past Najla
 
-*/
+ */
 
-/*
+ /*
 1- declare variables
 2- parse command line
 3- open server for connections  
@@ -80,8 +80,6 @@ past Najla
 
 *********When debugging exchange, server doesn't expects two or more threads in a row.*********
  */
-
-
 public class Server {
 
     private static String randomString() {
@@ -99,16 +97,21 @@ public class Server {
 
     // VARIABLE DECLARATION
     public static String host = "localhost";
-    public static int port = 8000;
-    public static int sport = 8888;
+    public static int port = 5000;
+    public static int sport = 3781;
+    public static Boolean unsubscribe=true;
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     public static String secret = randomString();
-    public static ArrayList serverResources = new ArrayList();
+    public static ArrayList<Resource> serverResources = new ArrayList<>();
     public static ArrayList serverRecords = new ArrayList();
     public static ArrayList secureServerRecords = new ArrayList();
+    public static ArrayList<String> Subscriber = new ArrayList<>();
     public static boolean debug = true;
+    public static int resultSize = 0;
     private static int counter = 0;    // identifies the user number connected
-    static int exchangeInterval = 60000;     // a minute between each server exchange
+    private static int scounter = 0;    // identifies the number of secure sockets connected
+    public static boolean secure =false;
+    static int exchangeInterval = 100000;     // a minute between each server exchange
     static int connectionIntervalLimit = 1000;    // a second between each connection
 
     public static void main(String[] args) throws org.apache.commons.cli.ParseException, InterruptedException, IOException {
@@ -160,9 +163,9 @@ public class Server {
         }
 
         Timer timer = new Timer();
-       timer.schedule(new serverExchanges(), 0, exchangeInterval);
+        timer.schedule(new serverExchanges(), 0, exchangeInterval);
 
-           class serverSecureExchanges extends TimerTask {
+        class serverSecureExchanges extends TimerTask {
 
             public void run() {
                 serverInteractions si = new serverInteractions();
@@ -174,98 +177,95 @@ public class Server {
             }
         }
 
-        
-       timer.schedule(new serverSecureExchanges(), 0, exchangeInterval);
+        timer.schedule(new serverSecureExchanges(), 0, exchangeInterval);
 
-        
-        
-        
-        
-        
-        
-        
-        
-        
         // OPEN SERVER FOR CONNECTIONS 
         debug("INFO", "starting the EZShare Server");
         debug("INFO", "using advertised hostname: " + host);
         debug("INFO", "bound to port: " + port);
-        debug("INFO", "bound to SECURE port ONLY: " + sport);
+        debug("INFO", "bound to secure port: " + sport);
         debug("INFO", "using secret: " + secret);
         debug("INFO", "interval exchange started ");
-        
-        
-        
-        
+
         //SECURE
         //Specify the keystore details (this can be specified as VM arguments as well)
         //the keystore file contains an application's own certificate and private key
-        System.setProperty("javax.net.ssl.keyStore", "/home/alisha/sslDS/keystore.jks");
+        System.setProperty("javax.net.ssl.keyStore", "serverkeystore.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "server123");
-        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
+        System.setProperty("javax.net.ssl.trustStore", "serverkeystore.jks");
         SSLServerSocketFactory sslsocketfactory = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault();
         SSLServerSocket sslserversocket = (SSLServerSocket) sslsocketfactory.createServerSocket(sport);
-        
-        
 
         // NON-SECURE   
         ServerSocketFactory factory = ServerSocketFactory.getDefault();
         ServerSocket server = factory.createServerSocket(port);
 
-
         //WHILE TRUE, WAIT FOR ANY CLIENT          
-        while (true) {
+        Thread ts = new Thread(() -> {
+            try {
+                while (true) {
+                    scounter++;
+                    serveClient sc = new serveClient();
+                   
+                    //SECURE
+                    SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
+                    debug("INFO", "secure client" + scounter + " requesting connection");
 
-            System.out.println("inside while");
-           
-            serveClient sc = new serveClient();
-            counter++;
-            debug("INFO", "client" + counter + " requesting connection");
-             
-            //SECURE
-            
-           SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
-             sslsocket.setSoTimeout(5000);
-                         
-            Thread ts = new Thread(() -> {
-                             
+                    sslsocket.setSoTimeout(5000);
 
-                try {
-                                   
+                    Thread sct = new Thread(() -> {
 
-                    sc.serveSecureClient(sslsocket, counter, connectionIntervalLimit);
-                                  
-
-                } catch (URISyntaxException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        try {
+                            sc.serveSecureClient(sslsocket, scounter-1, connectionIntervalLimit);
+                        } catch (URISyntaxException ex) {
+                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    });
+                    sct.start();
+              
                 }
-            });
-            ts.start();
-          
-           
-            
-            
-            
-            //NON-SECURE
-           Socket client = server.accept();
-           // client.setSoTimeout(5000);
-             Thread t = new Thread(() -> {
-                try {
-                       sc.serveClient(client, counter, connectionIntervalLimit);
-                  
-                } catch (URISyntaxException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
+        ts.start();
+
+        //NON-SECURE
+        
+        // client.setSoTimeout(5000);
+        Thread t = new Thread(() -> {
+            try {
+                while (true) {
+
+                    serveClient sc = new serveClient();
+                 
+                       counter++;
+
+                    //SECURE
+                   Socket client = server.accept();
+
+                    debug("INFO", "insecure client "  + counter + " requesting connection");
+                    Thread ct = new Thread(() -> {
+                        try {
+                            sc.serveClient(client, counter-1, connectionIntervalLimit);
+
+                        } catch (URISyntaxException ex) {
+                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (IOException ex) {
+                            Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    });
+                    ct.start();
+                           
                 }
-            });
-            t.start();
-             
-           
-         
-        }
+            } catch (IOException ex) {
+                Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
+        t.start();
 
         /* } catch (Exception e) {
             debug("ERROR",e.toString());

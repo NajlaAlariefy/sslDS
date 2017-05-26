@@ -41,7 +41,10 @@ import javax.net.ssl.SSLSocketFactory;
 public class serverCommands {
 
     private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
-
+public static boolean valid=true;
+	public static Socket socket = null;
+	//private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
+	Resource resourceTemp = null;
     JSONObject response = new JSONObject();
     JSONObject resource = new JSONObject();
     String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
@@ -82,7 +85,12 @@ public class serverCommands {
 
          */
         for (int i = 0; i < serverArray.size(); i++) {
-            Server.serverRecords.add(serverArray.get(i));
+            synchronized (Server.serverRecords) {
+				if(!Server.serverRecords.contains(serverArray.get(i))){
+					Server.serverRecords.add(serverArray.get(i));
+					Server.serverRecords.notifyAll();
+				}
+			}
         }
         /*
 
@@ -93,7 +101,7 @@ public class serverCommands {
         for (int i = 0; i < Server.serverRecords.size(); i++) {
           serverTraverser = (JSONObject) Server.serverRecords.get(i);
           if (serverTraverser.get("hostname").equals(Server.host)) {
-                if (serverTraverser.get("port").toString().equals(Integer.toString(Server.port))) {
+                if (serverTraverser.get("port").toString().equals(Integer.toString(Server.port))||serverTraverser.get("port").toString().equals(Integer.toString(Server.sport))) {
                     Server.serverRecords.remove(i);
                 }
             }
@@ -144,7 +152,7 @@ public class serverCommands {
                 Socket socket = null;
                 socket = new Socket(connect_host, connect_port);
                 socket.setSoTimeout(exchangeInterval);
-                Server.debug("INFO","exchange with " + connect_host + ":" + connect_port + " is successful.");
+               // Server.debug("INFO","exchange with " + connect_host + ":" + connect_port + " is successful.");
                 /*
 
                 6 - Sending the list to the randomly selected server
@@ -177,7 +185,7 @@ public class serverCommands {
                 String message = serverInput.readUTF();
                 JSONParser parser = new JSONParser();
                 JSONObject JSONresponse = (JSONObject) parser.parse(message);
-                Server.debug("RECEIVE EXCHANGE",JSONresponse.toJSONString());
+                Server.debug("RECEIVE", "insecure exchange: " + JSONresponse.toJSONString());
 
                
 
@@ -283,7 +291,7 @@ public class serverCommands {
         7 - resource is committed to server resources
          */
         
-        
+        valid=true;
         // 0 -  if the resource field was not given
         JSONObject response = new JSONObject();
         if (!command.containsKey("resource")) {
@@ -349,23 +357,62 @@ public class serverCommands {
         }
 
         //5 - is primary (not event Channel/URI different Owner combo)
-        Boolean isPrimaryKey = primaryKeyCheckAndRemove(resourcePublish);
+		/*Boolean isPrimaryKey = primaryKeyCheckAndRemove(resourcePublish);
         if (isPrimaryKey) {
-          
+
         } else {
             //if the resource provided is same Channel / URI but different Owner
             response.put("response", "error");
             response.put("errorMessage", "cannot publish resource");
-
-        }
-
-            // 6 - The server sets its own host and port on the resource
-            // resourcePublish.setServer(Server.host + ":" + Server.port);
-            
-            // 7 - commit the resource to server's resources
-            Server.serverResources.add(resourcePublish);
-            response.put("response", "success");
             output(response, output);
+            return;
+        }*/
+		for(int i=0;i<Server.serverResources.size();i++)
+		{
+			Resource queryRes = Server.serverResources.get(i);
+			if(queryRes.getChannel().equals(resourcePublish.getChannel())&&queryRes.getUri().equals(resourcePublish.getUri())&&
+					!queryRes.getOwner().equals(resourcePublish.getOwner()))
+			{
+
+				valid=false;
+				System.out.println(valid);
+			}
+			if(queryRes.getChannel().equals(resourcePublish.getChannel())&&queryRes.getUri().equals(resourcePublish.getUri())&&
+					queryRes.getOwner().equals(resourcePublish.getOwner()))
+			{
+				synchronized (Server.serverResources) {
+					Server.serverResources.set(i, resourcePublish);
+					Server.serverResources.notifyAll();
+					response.put("response", "success");
+					output(response, output);
+					return;
+				}
+
+				//overWriteRes(queryRes, resourcePublish,i);
+			}
+		}
+
+		// 6 - The server sets its own host and port on the resource
+		// resourcePublish.setServer(Server.host + ":" + Server.port);
+
+		// 7 - commit the resource to server's resources
+		if(valid)
+		{
+			synchronized (Server.serverResources) {
+
+				Server.serverResources.add(resourcePublish);
+				Server.serverResources.notifyAll();
+			}
+			response.put("response", "success");
+			output(response, output);
+			return;
+
+		}
+		else{
+			response.put("response", "error");
+			response.put("errorMessage", "cannot publish resource");
+			output(response, output);
+		}
     }
 
     
@@ -444,9 +491,9 @@ public class serverCommands {
 
                     hostPort = (JSONObject) Server.serverRecords.get(i);
                     connect_host = hostPort.get("hostname").toString();
-                    Server.debug("RELAY INFO","hostname:" + connect_host);
+                 //   Server.debug("RELAY INFO","hostname:" + connect_host);
                     connect_port = Integer.parseInt(hostPort.get("port").toString()); 
-                    Server.debug("RELAY INFO","port:" + connect_port);
+                  //  Server.debug("RELAY INFO","port:" + connect_port);
 
                     //if the server isn't relaying to itself
                     if (!(connect_host == Server.host && connect_port == Server.port)) {
@@ -455,13 +502,13 @@ public class serverCommands {
                             Socket socket = null;
                             socket = new Socket(connect_host, connect_port);
                             DataOutputStream serverOutput = new DataOutputStream(socket.getOutputStream());
-                            Server.debug("RELAY INFO","Connecting to server " + Server.serverRecords.get(i));
+                           // Server.debug("RELAY INFO","Connecting to server " + Server.serverRecords.get(i));
                             output(request, serverOutput); 
                             DataInputStream input = new DataInputStream(socket.getInputStream());
                             // If there are query results:
                             if (!receiveQuery(input).isEmpty()) {
                                 queryResult.addAll(receiveQuery(input));
-                                 Server.debug("RELAY RECEIVE", queryResult.toString());
+                                 Server.debug("RECEIVE", queryResult.toString());
                            
                             }
 
@@ -585,7 +632,10 @@ public class serverCommands {
 
             if (secret.equals(Server.secret)) {
                 //if the secret is correct
-                Server.serverResources.add(resourceShare);
+                synchronized (Server.serverResources) {
+					Server.serverResources.add(resourceShare);
+					Server.serverResources.notifyAll();
+				}
                 response.put("response", "success");
 
                 Boolean isPrimaryKey = primaryKeyCheckAndRemove(resourceShare);
@@ -665,7 +715,7 @@ public class serverCommands {
         JSONParser parser = new JSONParser();
         JSONObject JSONresponse = (JSONObject) parser.parse(firstResponse);
         
-        System.out.println("[RECEIVE] :" + JSONresponse.get("response"));
+       // Server.debug("[RECEIVE] " + JSONresponse.get("response"));
 
         Integer size = -1;
         Integer resultSize;
@@ -717,4 +767,263 @@ public class serverCommands {
              output.write(response.toJSONString());
 
     }
+      public void unsubscribe(JSONObject command, DataOutputStream output) throws IOException{
+		int id;
+		try{
+
+			id = Integer.parseInt((String) command.get("id"));
+		}catch(Exception e){
+			LOGGER.info("missing id");
+			return;
+		}
+		for(int i=0;i<Server.Subscriber.size();i++){
+			if(Server.Subscriber.get(i).equals(id)){
+				Server.Subscriber.remove(i);
+			}
+		}
+
+		response.put("response", "success");
+		response.put("resultSize", Server.resultSize);
+		Server.resultSize=0;
+		output(response,output);
+	}
+	public void subscribe(JSONObject command, DataOutputStream output) throws IOException {
+		// TODO Auto-generated method stub
+
+		String id = (String) command.get("id");
+		if(Server.Subscriber.contains(id)){
+			response.put("response", "error message");
+			response.put("error message", "Already Subscribed");
+			output.writeUTF(response.toJSONString());
+			return;
+		}
+		else{
+			Server.Subscriber.add(id);
+			response.put("response", "success");
+			response.put("id", id);
+			output(response,output);
+		}
+		try{
+			JSONObject template=(JSONObject) command.get("resourceTemplate");
+			resourceTemp = (Resource) Resource.parseJson(template);
+		}
+		catch (Exception e) {
+			// TODO: handle exception
+			response.put("response", "error");
+			response.put("errorMessage", "invalid resourceTemplate");
+		}
+		boolean relay = (boolean) command.get("relay");
+		new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+
+				for(int i=0;i< Server.serverResources.size();i++){
+					Resource queryResource = (Resource) Server.serverResources.get(i);
+					if(templateMatch(queryResource,resourceTemp)){
+						String owner =queryResource.getOwner();
+						queryResource.setOwner("*");
+						//res.setEzerver(Server.getAdvertisedHostName());
+						Server.resultSize++;
+						try {
+							output.writeUTF(Resource.toJson(queryResource).toString());
+							queryResource.setOwner(owner);
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+				if(relay){
+					//final String tempId = id;
+
+					Thread relaySub=new Thread(new Runnable() {
+
+						public void run() {
+							//createSubscriptions(serverResources, id, obj);
+							SubscribeRelay(command,id,output);
+						}
+					});
+
+					relaySub.start();
+				}
+				synchronized (Server.serverResources) {
+					// Check if relay flag is set
+
+					//boolean relay = obj.getBoolean("relay");
+
+					while(Server.Subscriber.contains(id)){
+						try {
+							Server.serverResources.wait();
+							if(Server.Subscriber.contains(id)){
+								Resource recent = Server.serverResources.get(Server.serverResources.size()-1);
+								if(templateMatch(recent,resourceTemp)){
+									String owner =recent.getOwner();
+									recent.setOwner("*");
+									//recent.setEzerver(Server.getAdvertisedHostName());
+									Server.resultSize++;
+									output.writeUTF(Resource.toJson(recent).toString());
+									recent.setOwner(owner);
+
+								}
+							}else{
+								break;
+							}
+						} catch (InterruptedException e) {
+							Server.debug("INFO","interrupted");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		}).start(); 
+	}
+	public static boolean templateMatch(Resource resourceObject,Resource queryResource){
+		if (resourceObject.getChannel().equals(queryResource.getChannel())
+				&& (resourceObject.getUri().toString().equals("") || (resourceObject.getUri().toString().equals(queryResource.getUri().toString())))
+				&& (resourceObject.getOwner().toString().equals("") || resourceObject.getOwner().equals(queryResource.getOwner()))
+				&& (resourceObject.getTags().size() == 0 || resourceObject.getTags().stream().anyMatch(tag -> queryResource.getTags().contains(tag)))
+				&& ((resourceObject.getDescription().equals("") && resourceObject.getName().equals(""))
+						|| resourceObject.getName().contains(queryResource.getName())
+						|| resourceObject.getDescription().contains(queryResource.getDescription()))) 
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+		//return true;
+
+	}
+	public static void SubscribeRelay(JSONObject command,String id,DataOutputStream output)
+	{
+		ArrayList RelayList = (ArrayList) Server.serverRecords.clone();
+		JSONObject randomServer = new JSONObject();
+		for(int index=0;index<RelayList.size();index++)
+		{
+			randomServer = (JSONObject) RelayList.get(index);
+			String connect_host = randomServer.get("hostname").toString();
+			int connect_port = ((Long) randomServer.get("port")).intValue();
+
+			Thread sendSub=new Thread(new Runnable() {
+				public void run() {
+                                    try {
+                                        CreateConnectionRelay(connect_host,connect_port,id,command,output);
+                                    } catch (IOException ex) {
+                                        Logger.getLogger(serverCommands.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
+				}
+			});
+			sendSub.start();			
+		}
+		Thread serverListMonitor=new Thread(new Runnable() {
+			public void run() {
+				while(Server.Subscriber.contains(id)){
+					synchronized (Server.serverRecords) {
+						try {
+							Server.serverRecords.wait();
+							JSONObject randomServerNew = new JSONObject();
+							for(int i=0;i<Server.serverRecords.size();i++){
+								if(!RelayList.contains(Server.serverRecords.get(i))){
+									RelayList.add(Server.serverRecords.get(i));
+									randomServerNew = (JSONObject) Server.serverRecords.get(i);
+									String connect_host = randomServerNew.get("hostname").toString();
+									int connect_port = ((Long) randomServerNew.get("port")).intValue();
+									Thread sendSub=new Thread(new Runnable() {
+										public void run() {
+                                                                                    try {
+                                                                                        CreateConnectionRelay(connect_host,connect_port,id,command,output);
+                                                                                    } catch (IOException ex) {
+                                                                                        Logger.getLogger(serverCommands.class.getName()).log(Level.SEVERE, null, ex);
+                                                                                    }
+										}
+									});
+									sendSub.start();
+								}
+							}
+						} catch (InterruptedException e) {
+							Server.debug("INFO","control of resource interrupted");
+						}
+					}
+				}
+			}
+		});
+		serverListMonitor.start();
+	}
+
+	@SuppressWarnings("unchecked")
+	public static void CreateConnectionRelay(String connect_host, int connect_port, String id, JSONObject command,DataOutputStream output) throws IOException {
+		// TODO Auto-generated method stub
+		while(Server.Subscriber.contains(id)){
+			try{
+				boolean secure = false;
+
+				if (secure) {
+					SSLSocketFactory sslsocketfactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+					socket = (SSLSocket) sslsocketfactory.createSocket(connect_host, connect_port);
+				} 
+				else 
+				{
+					socket=new Socket(connect_host,connect_port);
+				}
+				DataInputStream relayInput = new DataInputStream(socket.getInputStream());
+				DataOutputStream relayOutput = new DataOutputStream(socket.getOutputStream());
+				JSONObject commandRelay=new JSONObject();
+				commandRelay = command;
+				commandRelay.put("relay", false);
+				relayOutput.writeUTF(commandRelay.toString());
+				Thread t=new Thread(new Runnable() {
+					public void run() {
+						while(true){
+							synchronized(Server.unsubscribe){
+								try {
+									Server.unsubscribe.wait();
+									if(!Server.Subscriber.contains(id)){
+										JSONObject unsubscribJsonObject=new JSONObject();
+										unsubscribJsonObject.put("command","UNSUBSCRIBE");
+										unsubscribJsonObject.put("id",id+"");
+										relayOutput.writeUTF(unsubscribJsonObject.toJSONString());
+										socket.close();
+									}
+								} catch (IOException e) {
+									Server.debug("INFO","Cannot close the connection");
+								} catch (InterruptedException e) {
+									// TODO Auto-generated catch block
+									Server.debug("INFO","Connection Interrupted");;
+								}
+							}
+						}
+					}
+				});
+				t.start();
+				while(Server.Subscriber.contains(id)){
+					try{
+						while(relayInput.available()>0){
+							/*JSONObject template = (JSONObject) command.get("resourceTemplate");
+						Resource Restemplate = (Resource) Resource.parseJson(template);
+						String reso = Resource.toJson(Restemplate).toString();*/
+							String serverResponseRelay = relayInput.readUTF();
+							JSONParser parser = new JSONParser();
+							JSONObject relayResponse = (JSONObject) parser.parse(serverResponseRelay);
+							Server.debug("RECEIVE", relayResponse.toJSONString());
+							if(!serverResponseRelay.contains("response")/*serverResponseRelay.equals(reso)*/){
+								//if(Server.debug){
+								Server.debug("RECEIVE", relayResponse.toString());
+								Server.resultSize += 1;
+								output.writeUTF(serverResponseRelay.toString());
+								//}
+							}
+						}
+					}catch(Exception e){
+
+						Server.debug("INFO" ,e.getMessage());
+						break;
+					}
+				}
+			}catch(Exception e){return;}
+		}
+	}		
 }

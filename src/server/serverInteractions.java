@@ -39,7 +39,7 @@ public void secureExchange() throws IOException {
                 serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
                 if (serverTraverser.get("hostname").equals(Server.host) )
                 {
-                    if(serverTraverser.get("port").equals(Server.port))
+                    if(serverTraverser.get("port").equals(Server.port) || serverTraverser.get("port").equals(Server.sport))
                     { Server.secureServerRecords.remove(i);} 
                     
                 }
@@ -91,7 +91,6 @@ public void secureExchange() throws IOException {
                 listToRandomServer.put("serverList", Server.secureServerRecords);
                  socket.setSoTimeout(2000);
                 secureOutput(listToRandomServer, bufferedwriter);
-                Server.debug("SECURE-INTERVAL-INFO", "exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
                 checkSecure = true;
                 
                 //Create buffered reader to read input  
@@ -107,7 +106,8 @@ public void secureExchange() throws IOException {
                 ArrayList<String> listWithUniqueValues = new ArrayList<>(setWithUniqueValues);
                 Server.secureServerRecords = listWithUniqueValues;
                 socket.close();
-                
+                Server.debug("SECURE-INTERVAL-INFO", "exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
+
             } catch (Exception e) {
                 // If the connection with the random server is not established
                 Server.debug("SECURE-INTERVAL-INFO","connection with server " + connect_host + ":" + connect_port + " was not successful. ");
@@ -163,9 +163,7 @@ public void exchange() throws IOException {
             try {
                 Socket socket = null;
                 socket = new Socket(connect_host, connect_port);
-                String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-                System.out.println(time + " - [INFO] - exchange with " + connect_host + ":" + connect_port + " is successful.");
-                
+               
                 // Sending the list to the randomly selected server
                 // Receiving ackowledgement (success)/(error)                
                 JSONObject listToRandomServer = new JSONObject();
@@ -186,10 +184,12 @@ public void exchange() throws IOException {
                 ArrayList<String> listWithUniqueValues = new ArrayList<>(setWithUniqueValues);
                 Server.serverRecords = listWithUniqueValues;
                 socket.close();
+                 String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
+                System.out.println(time + " - [INFO] - exchange with " + connect_host + ":" + connect_port + " is successful.");
+                
             } catch (Exception e) {
                 // If the connection with the random server is not established
                 Server.debug("INTERVAL-INFO","connection with server " + connect_host + ":" + connect_port + " was not successful. ");
-                Server.debug("INTERVAL-INFO","error message : "  + e);
                
                 serverTraverser = new JSONObject();
 

@@ -30,6 +30,7 @@ import sun.security.krb5.internal.HostAddress;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.ConsoleHandler;
@@ -73,34 +74,36 @@ public class Client {
 
     @SuppressWarnings("empty-statement")
     public static void main(String[] args) throws ParseException, URISyntaxException, ParseException, org.apache.commons.cli.ParseException, IOException {
-
         /*
     
              1- initialized arguments (hardcoded)
         
          */
         String host = "localhost";
-        int port = 3781;
-        List<String> tags = Arrays.asList("");
-
-        String commandName = "EXCHANGE";
+        int port = 5000;
+        ArrayList<String> tags = new ArrayList<>();
+        boolean isValid=true;
+        String commandName = "SUBSCRIBE";
         String name = "";
         String description = "";
-        String URI = "";
+        String URI = "https://www.abc.com";
         String owner = "";
         String channel = "";
         String ezserver = "";
         String secret = "";
-        String servers = "localhost:8888";
-        boolean secure = true;
-        boolean relay = false;
-        System.setProperty("javax.net.ssl.trustStore", "truststore.jks");
-			
+        String servers = "localhost:8888, localhost:5000, localhost:3781";
+        boolean secure = false;
+        boolean relay = true;
+        int id = 0;
+       System.setProperty("javax.net.ssl.keyStore", "clientkeystore.jks");
+        System.setProperty("javax.net.ssl.keyStorePassword", "client123");
+        System.setProperty("javax.net.ssl.trustStore", "clientkeystore.jks");			
         /*
              2- CLI parsing
          */
-        boolean isValid = false;
+        //boolean isValid = false;
         Options options = new Options();
+        options.addOption("subscribe","To subscribe to a resource");
         options.addOption("channel", true, "channel");
         options.addOption("debug", "print debug information");
         options.addOption("description", true, "resource description");
@@ -207,18 +210,20 @@ public class Client {
             debug = Boolean.valueOf(cmd.getOptionValue("debug"));
         }
         if (cmd.hasOption("tags")) {
-            String[] tags1 = cmd.getOptionValue("tags").split(",");
-            for (int i = 0; i < tags1.length; i++) {
-                tags.add(tags1[i].trim());
-            }
-        }
+			//System.out.println(cmd.getOptionValue("tags"));
+			String[] tags1 = cmd.getOptionValue("tags").split(",");
+			for (int i = 0; i < tags1.length; i++) {
+				tags.add(tags1[i]);
+			}
+
+		} 
         if (cmd.hasOption("secure")) {
-           secure = true;// secure = Boolean.valueOf(cmd.getOptionValue("secure"));
+            secure = Boolean.valueOf(cmd.getOptionValue("secure"));
         }
 
         //REMOVE LATER
         isValid = true;
-
+    if(!commandName.equals("SUBSCRIBE")){
         if (isValid) {
 
             if (secure) {
@@ -238,8 +243,7 @@ public class Client {
                  */
                 JSONObject command = new JSONObject();
                 Resource resource = new Resource();
-                command = resource.inputToJSON(commandName, name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
-
+                command = resource.inputToJSON(commandName, id,name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
                 /*
                 
                     7 - SEND COMMAND TO SERVER
@@ -275,10 +279,8 @@ public class Client {
                  */
                 while (true) {
                        
-                      string = null;
-                    System.out.println("1");
+                      string = null; 
                     if ((string = bufferedreader.readLine()) != null) {
-                        System.out.println("2");
                          String response = string;
                         JSONParser parser = new JSONParser();
                         JSONObject JSONresponse = (JSONObject) parser.parse(response);
@@ -309,7 +311,7 @@ public class Client {
 
                 }
  } catch (Exception e) {
-                    debug("ERRORhere", e.toString());
+                    debug("ERROR", e.toString());
                 }
             } else {
 
@@ -330,8 +332,7 @@ public class Client {
         
                     JSONObject command = new JSONObject(); 
                     Resource resource = new Resource();
-                    command = resource.inputToJSON(commandName, name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
-
+                    command = resource.inputToJSON(commandName, id,name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
                     /*
                 
                     7 - SEND COMMAND TO SERVER
@@ -349,11 +350,14 @@ public class Client {
                     while (true) {
 
                         if (input.available() > 0) {
-                            String response = input.readUTF();
-                            JSONParser parser = new JSONParser();
+                                
+                          try{
+                           String response = input.readUTF();
+                          JSONParser parser = new JSONParser();
                             JSONObject JSONresponse = (JSONObject) parser.parse(response);
                             debug("RECEIVE", JSONresponse.toJSONString());
 
+                           
                             /*
                         
                         
@@ -370,6 +374,8 @@ public class Client {
                                     clientCommand.query(JSONresponse, input);
                                     break;
                             }
+                                }catch (Exception e){ debug("ERROR", "Incompatible ports");}
+                      
                             socket.close();
                      
                             break;
@@ -380,13 +386,22 @@ public class Client {
                 } catch (UnknownHostException e) {
                 } catch (IOException e) {
                     e.printStackTrace();
-                } catch (ParseException ex) {
-                    System.out.println(ex);
-                    Logger.getLogger(Client.class.getName()).log(Level.ALL, null, ex);
                 } finally {
                    //socket.close();
                 }
             }
+        }else{
+            System.out.println("hereeee"+port+host);
+            SubscribeCommandConnection subscribeCommand = new SubscribeCommandConnection();
+	JSONObject unsubscribJsonObject=new JSONObject();
+			Random random=new Random(System.currentTimeMillis());
+			id=random.nextInt();
+			unsubscribJsonObject.put("command","UNSUBSCRIBE");
+			unsubscribJsonObject.put("id",id+"");
+
+			SubscribeCommandConnection.establishPersistentConnection(secure,port,host,id,unsubscribJsonObject,commandName, name, owner, description, channel, URI, tags, ezserver, secret, relay, servers);
+
+        }
 
         } else {
             debug("ERROR", "connection aborted");
