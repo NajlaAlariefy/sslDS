@@ -1,4 +1,4 @@
-package server;
+package EZShare;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;

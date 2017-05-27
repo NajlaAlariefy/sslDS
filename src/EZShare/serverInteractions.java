@@ -1,5 +1,5 @@
 
-package server;
+package EZShare;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;

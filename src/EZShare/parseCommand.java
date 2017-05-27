@@ -1,4 +1,4 @@
-package server;
+package EZShare;
 
 import java.io.BufferedWriter;
 import java.io.DataOutputStream;
@@ -30,14 +30,14 @@ public class parseCommand {
             secureServerCommands cmd = new secureServerCommands();
             switch ((String) command.get("command")) {
                 case "EXCHANGE":
-                  cmd.exchange(command, output, exchangeInterval);
+                    cmd.exchange(command, output, exchangeInterval);
                     break;
                 case "FETCH":
-                  cmd.fetch(command,output,  x);
+                    cmd.fetch(command,output,  x);
                     break;
                 case "PUBLISH":
-                  cmd.publish(command, output);
-                   break;
+                    cmd.publish(command, output);
+                    break;
                 case "QUERY":
                     cmd.query(command, output);
                     break;
@@ -45,27 +45,24 @@ public class parseCommand {
                     cmd.remove(command, output);
                     break;
                 case "SHARE":
-                  cmd.share(command, output);
+                    cmd.share(command, output);
                     break;
                  case "SUBSCRIBE":
-				cmd.subscribe(command, output);
-				break;
-			case "UNSUBSCRIBE":
-				cmd.unsubscribe(command,output);
-				synchronized(Server.unsubscribe){
-					Server.unsubscribe.notifyAll();
-				}
-				break;
+		    cmd.subscribe(command, output);
+		    break;
+		case "UNSUBSCRIBE":
+		    cmd.unsubscribe(command,output);
+		    synchronized(Server.unsubscribe){
+			Server.unsubscribe.notifyAll();
+		    }
+		    break;
                 default: { 
                     response.put("response", "error");
                     response.put("errorMessage", "invalid command");
                     output.write(response.toJSONString() + '\n');
                     output.flush();
                     Server.debug("SEND", response.toJSONString());
-                     
-
                 }
-
             }
         } else {
             //if the command is missing 
@@ -79,10 +76,6 @@ public class parseCommand {
 
     }
 
-    
-    
-    
-    
     public static void parseCommand(JSONObject command, DataOutputStream output, int exchangeInterval) throws IOException, URISyntaxException, ParseException {
 
         JSONObject response = new JSONObject();
@@ -113,33 +106,28 @@ public class parseCommand {
                 case "SHARE":
                     cmd.share(command, output);
                     break;
-                    case "SUBSCRIBE":
-				cmd.subscribe(command, output);
-				break;
-			case "UNSUBSCRIBE":
-				cmd.unsubscribe(command,output);
-				synchronized(Server.unsubscribe){
-					Server.unsubscribe.notifyAll();
-				}
-				break;
+                case "SUBSCRIBE":
+		    cmd.subscribe(command, output);
+		    break;
+		case "UNSUBSCRIBE":
+		    cmd.unsubscribe(command,output);
+		    synchronized(Server.unsubscribe){
+		    Server.unsubscribe.notifyAll();
+		    }
+		    break;
                 default: { 
                     response.put("response", "error");
                     response.put("errorMessage", "invalid command");
                     output.writeUTF(response.toJSONString());
-                    Server.debug("SEND", response.toJSONString());
-                     
-
+                    Server.debug("SEND", response.toJSONString());      
                 }
-
             }
         } else {
             //if the command is missing 
             response.put("response", "error");
             response.put("errorMessage", "missing or incorrect type for command");
             output.writeUTF(response.toJSONString());
-            Server.debug("SEND", response.toJSONString());
-                    
+            Server.debug("SEND", response.toJSONString());        
         }
-
     }
 }

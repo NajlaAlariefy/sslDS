@@ -1,4 +1,4 @@
-package server;
+package EZShare;
 
 import Utilities.Resource;
 import java.io.BufferedWriter;

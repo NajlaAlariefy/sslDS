@@ -1,5 +1,5 @@
 package Utilities;
-import client.Client;
+import EZShare.Client;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -8,7 +8,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONArray; 
 import java.net.URI;
 import java.net.URISyntaxException;
-import server.Server;
+import EZShare.Server;
 
 public class Resource {
     private String name;

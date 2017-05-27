@@ -1,4 +1,4 @@
-package client;
+package EZShare;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -80,22 +80,22 @@ public class Client {
         
          */
         String host = "localhost";
-        int port = 5000;
+        int port = 8000;
         ArrayList<String> tags = new ArrayList<>();
         boolean isValid=true;
-        String commandName = "SUBSCRIBE";
+        String commandName = "";
         String name = "";
         String description = "";
-        String URI = "https://www.abc.com";
+        String URI = "";
         String owner = "";
         String channel = "";
         String ezserver = "";
         String secret = "";
-        String servers = "localhost:8888, localhost:5000, localhost:3781";
+        String servers = "";
         boolean secure = false;
-        boolean relay = true;
+        boolean relay = false;
         int id = 0;
-       System.setProperty("javax.net.ssl.keyStore", "clientkeystore.jks");
+        System.setProperty("javax.net.ssl.keyStore", "clientkeystore.jks");
         System.setProperty("javax.net.ssl.keyStorePassword", "client123");
         System.setProperty("javax.net.ssl.trustStore", "clientkeystore.jks");			
         /*
@@ -222,7 +222,7 @@ public class Client {
         }
 
         //REMOVE LATER
-        isValid = true;
+        //isValid = true;
     if(!commandName.equals("SUBSCRIBE")){
         if (isValid) {
 
@@ -357,7 +357,6 @@ public class Client {
                             JSONObject JSONresponse = (JSONObject) parser.parse(response);
                             debug("RECEIVE", JSONresponse.toJSONString());
 
-                           
                             /*
                         
                         
@@ -391,7 +390,7 @@ public class Client {
                 }
             }
         }else{
-            System.out.println("hereeee"+port+host);
+          
             SubscribeCommandConnection subscribeCommand = new SubscribeCommandConnection();
 	JSONObject unsubscribJsonObject=new JSONObject();
 			Random random=new Random(System.currentTimeMillis());

@@ -1,4 +1,4 @@
-package server;
+package EZShare;
 
 import Utilities.Resource;
 import java.io.BufferedOutputStream;
@@ -42,16 +42,16 @@ import java.util.logging.Handler;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-import static server.serverCommands.socket;
-import static server.serverCommands.valid;
+import static EZShare.serverCommands.socket;
+import static EZShare.serverCommands.valid;
 
 public class secureServerCommands {
 
     private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
-public static boolean valid=true;
-	public static Socket socket = null;
-	//private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
-	Resource resourceTemp = null;
+    public static boolean valid=true;
+    public static Socket socket = null;
+    //private static final Logger LOGGER = Logger.getLogger(serverCommands.class.getName());
+    Resource resourceTemp = null;
     JSONObject response = new JSONObject();
     JSONObject resource = new JSONObject();
     String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
@@ -79,6 +79,7 @@ public static boolean valid=true;
         9 - If the connection with the random server is not established remove serverRecord
 
          */
+        
         resource = (JSONObject) command.get("resource");
         JSONObject response = new JSONObject();
         JSONArray serverArray = new JSONArray();
@@ -119,8 +120,7 @@ public static boolean valid=true;
             return;
         } else {
             /*
-
-         3b -  Enforce rules:  check if server record received is wrong (missing resourcetemplate )
+              3b -  Enforce rules:  check if server record received is wrong (missing resourcetemplate )
              */
             for (int i = 0; i < Server.secureServerRecords.size(); i++) {
                 serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
@@ -142,7 +142,6 @@ public static boolean valid=true;
             int size = Integer.valueOf(Server.secureServerRecords.size());
             int index = Integer.valueOf(r.nextInt(size));
             randomServer = (JSONObject) Server.secureServerRecords.get(index);
-
             /*
 
                 5 - Attempt connect to the randomly selected server
@@ -155,14 +154,11 @@ public static boolean valid=true;
             
             
             Boolean checkSecure = false;
-             try (SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port)) {
-                  
+             try (SSLSocket socket = (SSLSocket) factory.createSocket(connect_host, connect_port)) {       
                 //Create buffered writer to send data to the server
                 OutputStream serverOutput = socket.getOutputStream();
                 OutputStreamWriter outputstreamwriter = new OutputStreamWriter(serverOutput);
-                BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter);
-
-                
+                BufferedWriter bufferedwriter = new BufferedWriter(outputstreamwriter); 
                 /*
 
                 6 - Sending the list to the randomly selected server
@@ -917,7 +913,7 @@ public static boolean valid=true;
 		//return true;
 
 	}
-	public static void SubscribeRelay(JSONObject command,String id,DataOutputStream output)
+	public static void SubscribeRelay(JSONObject command,String id,BufferedWriter output)
 	{
 		ArrayList RelayList = (ArrayList) Server.serverRecords.clone();
 		JSONObject randomServer = new JSONObject();
@@ -974,7 +970,7 @@ public static boolean valid=true;
 	}
 
 	@SuppressWarnings("unchecked")
-	public static void CreateConnectionRelay(String connect_host, int connect_port, String id, JSONObject command,DataOutputStream output) throws IOException {
+	public static void CreateConnectionRelay(String connect_host, int connect_port, String id, JSONObject command,BufferedWriter output) throws IOException {
 		// TODO Auto-generated method stub
 		while(Server.Subscriber.contains(id)){
 			try{
@@ -1032,7 +1028,7 @@ public static boolean valid=true;
 								//if(Server.debug){
 								Server.debug("RECEIVE", relayResponse.toString());
 								Server.resultSize += 1;
-								output.writeUTF(serverResponseRelay.toString());
+								output.write(serverResponseRelay.toString());
 								//}
 							}
 						}

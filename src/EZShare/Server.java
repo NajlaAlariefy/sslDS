@@ -1,4 +1,4 @@
-package server;
+package EZShare;
 
 import Utilities.Resource;
 import java.io.BufferedReader;
@@ -38,31 +38,6 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-/*
-
-- implmented interval exchange for secure, not sure if it works well (tested exchange first, it seems to be working)
-- still want to concurrently accept two types of threads
-- still need to test query relay and exchange 
-
-
------
-
-we want to check the connection if it's secure or not in the exchange command. It just breaks out if it times out. 
-After that we need to exchange/query/interval
-Then we need to set the certificate whenever we receiver it
-
-That's all
-
-----
-we were trying to test exchange
-and we noticed that we removed the server insecure port and we have to add it
-also, client is not receiving the exchange succces/ message
-
-yours,
-past Najla
-
- */
-
  /*
 1- declare variables
 2- parse command line
@@ -97,7 +72,7 @@ public class Server {
 
     // VARIABLE DECLARATION
     public static String host = "localhost";
-    public static int port = 5000;
+    public static int port = 8000;
     public static int sport = 3781;
     public static Boolean unsubscribe=true;
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
@@ -111,7 +86,7 @@ public class Server {
     private static int counter = 0;    // identifies the user number connected
     private static int scounter = 0;    // identifies the number of secure sockets connected
     public static boolean secure =false;
-    static int exchangeInterval = 100000;     // a minute between each server exchange
+    static int exchangeInterval = 60000;     // a minute between each server exchange
     static int connectionIntervalLimit = 1000;    // a second between each connection
 
     public static void main(String[] args) throws org.apache.commons.cli.ParseException, InterruptedException, IOException {
@@ -138,10 +113,12 @@ public class Server {
             exchangeInterval = (int) Double.parseDouble(cmd.getOptionValue("exchangeinterval")) * 1000;
         }
         if (cmd.hasOption("port")) {
+            System.out.println(cmd.getOptionValue("port"));
             port = Integer.parseInt(cmd.getOptionValue("port"));
         }
         if (cmd.hasOption("sport")) {
-            sport = Integer.parseInt(cmd.getOptionValue("port"));
+            System.out.println(cmd.getOptionValue("sport"));
+            sport = Integer.parseInt(cmd.getOptionValue("sport"));
         }
         if (cmd.hasOption("secret")) {
             secret = cmd.getOptionValue("secret");
