@@ -185,7 +185,7 @@ public void exchange() throws IOException {
                 Server.serverRecords = listWithUniqueValues;
                 socket.close();
                  String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-                System.out.println(time + " - [INFO] - exchange with " + connect_host + ":" + connect_port + " is successful.");
+                System.out.println(time + " - [INFO] - insecure interval exchange: exchange with " + connect_host + ":" + connect_port + " is successful.");
                 
             } catch (Exception e) {
                 // If the connection with the random server is not established
@@ -197,7 +197,7 @@ public void exchange() throws IOException {
                     serverTraverser = (JSONObject) Server.serverRecords.get(i);
                     if (serverTraverser.get("hostname").equals(connect_host) && serverTraverser.get("port").equals(connect_port)) {
                         Server.serverRecords.remove(i);
-                Server.debug("INTERVAL-INFO","server has been removed");
+                Server.debug("INFO","insecure interval exchange: server has been removed");
                
                     }
                 }

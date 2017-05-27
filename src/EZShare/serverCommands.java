@@ -375,8 +375,8 @@ public static boolean valid=true;
 			{
 
 				valid=false;
-				System.out.println(valid);
-			}
+
+	}
 			if(queryRes.getChannel().equals(resourcePublish.getChannel())&&queryRes.getUri().equals(resourcePublish.getUri())&&
 					queryRes.getOwner().equals(resourcePublish.getOwner()))
 			{

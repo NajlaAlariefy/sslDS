@@ -35,7 +35,7 @@ public class serveClient {
          
             Server.secure = true;
             JSONParser parser = new JSONParser();
-            clientSocket.setSoTimeout(5000);  
+            //clientSocket.setSoTimeout(5000);  
             //Create buffered reader to read input from the console
             InputStream input = clientSocket.getInputStream();
             InputStreamReader inputstreamreader = new InputStreamReader(input);
@@ -52,9 +52,9 @@ public class serveClient {
             // bufferedwriter.flush();
 
             //THIS WILL RUN UNTIL THE SOCKET IS CLOSED BY THE CLIENT'S SIDE
-            //while (true) {
+            while (true) {
             String response = null;
-
+            //System.out.println(bufferedreader.readLine());
             if ((response = bufferedreader.readLine()) != null) {
                 // Attempt to convert read data to JSON
                 JSONObject command = (JSONObject) parser.parse(response);
@@ -63,10 +63,10 @@ public class serveClient {
                 pc.parseSecureCommand(command, bufferedwriter, exchangeInterval, outStream);
                 //clientSocket.close();
             }
-            //}
+           }
 
         } catch (IOException | ParseException e) {
-            Server.debug("ERROR", "incompatible connections");
+            Server.debug("ERROR", "incompatible connections" + e.toString());
         }
     }
 
@@ -91,7 +91,7 @@ public class serveClient {
                     parseCommand pc = new parseCommand();
                     pc.parseCommand(command, output, exchangeInterval);
                     }catch(Exception e){
-                        System.out.println(e);
+                       // System.out.println(e);
                     }
                 }
             }

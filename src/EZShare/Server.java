@@ -81,7 +81,7 @@ public class Server {
     public static ArrayList serverRecords = new ArrayList();
     public static ArrayList secureServerRecords = new ArrayList();
     public static ArrayList<String> Subscriber = new ArrayList<>();
-    public static boolean debug = true;
+    public static boolean debug = false;
     public static int resultSize = 0;
     private static int counter = 0;    // identifies the user number connected
     private static int scounter = 0;    // identifies the number of secure sockets connected
@@ -99,7 +99,7 @@ public class Server {
         options.addOption("port", true, "server port, an integer");
         options.addOption("sport", true, "secure server port, an integer");
         options.addOption("secret", true, "secret");
-        options.addOption("debug", true, "print debug information");
+        options.addOption("debug", "print debug information");
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = null;
         cmd = parser.parse(options, args);
@@ -113,18 +113,27 @@ public class Server {
             exchangeInterval = (int) Double.parseDouble(cmd.getOptionValue("exchangeinterval")) * 1000;
         }
         if (cmd.hasOption("port")) {
+<<<<<<< HEAD:src/EZShare/Server.java
+
+  port = Integer.parseInt(cmd.getOptionValue("port"));
+        }
+        if (cmd.hasOption("sport")) {
+
+   sport = Integer.parseInt(cmd.getOptionValue("sport"));
+=======
             System.out.println(cmd.getOptionValue("port"));
             port = Integer.parseInt(cmd.getOptionValue("port"));
         }
         if (cmd.hasOption("sport")) {
             System.out.println(cmd.getOptionValue("sport"));
             sport = Integer.parseInt(cmd.getOptionValue("sport"));
+>>>>>>> origin/master:src/EZShare/Server.java
         }
         if (cmd.hasOption("secret")) {
             secret = cmd.getOptionValue("secret");
         }
         if (cmd.hasOption("debug")) {
-            debug = Boolean.parseBoolean(cmd.getOptionValue("debug"));
+            debug = true;// Boolean.parseBoolean(cmd.getOptionValue("debug"));
         }
         //SERVER INTERACTIONS BY EXCHANGE INITIATED
         class serverExchanges extends TimerTask {
@@ -188,7 +197,7 @@ public class Server {
                     SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
                     debug("INFO", "secure client" + scounter + " requesting connection");
 
-                    sslsocket.setSoTimeout(5000);
+                    //sslsocket.setSoTimeout(5000);
 
                     Thread sct = new Thread(() -> {
 
