@@ -113,21 +113,12 @@ public class Server {
             exchangeInterval = (int) Double.parseDouble(cmd.getOptionValue("exchangeinterval")) * 1000;
         }
         if (cmd.hasOption("port")) {
-<<<<<<< HEAD:src/EZShare/Server.java
 
   port = Integer.parseInt(cmd.getOptionValue("port"));
         }
         if (cmd.hasOption("sport")) {
 
    sport = Integer.parseInt(cmd.getOptionValue("sport"));
-=======
-            System.out.println(cmd.getOptionValue("port"));
-            port = Integer.parseInt(cmd.getOptionValue("port"));
-        }
-        if (cmd.hasOption("sport")) {
-            System.out.println(cmd.getOptionValue("sport"));
-            sport = Integer.parseInt(cmd.getOptionValue("sport"));
->>>>>>> origin/master:src/EZShare/Server.java
         }
         if (cmd.hasOption("secret")) {
             secret = cmd.getOptionValue("secret");
@@ -171,8 +162,7 @@ public class Server {
         debug("INFO", "bound to port: " + port);
         debug("INFO", "bound to secure port: " + sport);
         debug("INFO", "using secret: " + secret);
-        debug("INFO", "interval exchange started ");
-
+     
         //SECURE
         //Specify the keystore details (this can be specified as VM arguments as well)
         //the keystore file contains an application's own certificate and private key
@@ -195,7 +185,7 @@ public class Server {
                    
                     //SECURE
                     SSLSocket sslsocket = (SSLSocket) sslserversocket.accept();
-                    debug("INFO", "secure client" + scounter + " requesting connection");
+                    //debug("INFO", "secure client" + scounter + " is requesting connection");
 
                     //sslsocket.setSoTimeout(5000);
 
@@ -233,7 +223,7 @@ public class Server {
                     //SECURE
                    Socket client = server.accept();
 
-                    debug("INFO", "insecure client "  + counter + " requesting connection");
+                   // debug("INFO", "insecure client "  + counter + " requesting connection");
                     Thread ct = new Thread(() -> {
                         try {
                             sc.serveClient(client, counter-1, connectionIntervalLimit);

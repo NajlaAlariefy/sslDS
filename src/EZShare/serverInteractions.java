@@ -48,13 +48,13 @@ public void secureExchange() throws IOException {
             
             
         if (Server.secureServerRecords.isEmpty()) {
-            Server.debug("SECURE-INTERVAL-INFO", "server exchange initiated: empty server record list.");
+            Server.debug("INFO", "insecure server exchange initiated: empty server record list.");
         } else {
             
             
             
             //Pick a random server to connect from the list
-            Server.debug("SECURE-INTERVAL-INFO", "server exchange initiated: randomly selecting a server");
+            Server.debug("INFO", "insecure server exchange initiated: randomly selecting a server");
             Random r = new Random();
             JSONObject randomServer = new JSONObject();
             int size = Integer.valueOf(Server.secureServerRecords.size());
@@ -98,7 +98,7 @@ public void secureExchange() throws IOException {
                 InputStreamReader inputstreamreader = new InputStreamReader(inputFromRandom);
                 BufferedReader bufferedreader = new BufferedReader(inputstreamreader);
                 String message = bufferedreader.readLine();
-                Server.debug("SECURE-INTERVAL-RECEIVE",  message);
+                Server.debug("RECEIVE",  "secure exchange: " +message);
                 
                 
                 // Display distinct servers in the serverRecords
@@ -106,12 +106,12 @@ public void secureExchange() throws IOException {
                 ArrayList<String> listWithUniqueValues = new ArrayList<>(setWithUniqueValues);
                 Server.secureServerRecords = listWithUniqueValues;
                 socket.close();
-                Server.debug("SECURE-INTERVAL-INFO", "exchange with " + connect_host + ":" + connect_port + " on a secure channel is successful.");
+                Server.debug("INFO", "secure exchange with " + connect_host + ":" + connect_port + " is successful.");
 
             } catch (Exception e) {
                 // If the connection with the random server is not established
-                Server.debug("SECURE-INTERVAL-INFO","connection with server " + connect_host + ":" + connect_port + " was not successful. ");
-                Server.debug("SECURE-INTERVAL-INFO","error message : "  + e);
+                Server.debug("INFO","secure exchange connection with server " + connect_host + ":" + connect_port + " was not successful. ");
+                //Server.debug("SECURE-INTERVAL-INFO","error message : "  + e);
                
                 serverTraverser = new JSONObject();
 
@@ -119,7 +119,7 @@ public void secureExchange() throws IOException {
                     serverTraverser = (JSONObject) Server.secureServerRecords.get(i);
                     if (serverTraverser.get("hostname").equals(connect_host) && serverTraverser.get("port").equals(connect_port)) {
                         Server.secureServerRecords.remove(i);
-                Server.debug("SECURE-INTERVAL-INFO","server has been removed");
+              //  Server.debug("INFO","server has been removed");
                
                     }
                 }
@@ -144,13 +144,13 @@ public void exchange() throws IOException {
             
             
         if (Server.serverRecords.isEmpty()) {
-            Server.debug("INTERVAL-INFO", "server exchange initiated: empty server record list.");
+            Server.debug("INFO", "insecure exchange initiated: empty server record list.");
         } else {
             
             
             
             //Pick a random server to connect from the list
-            Server.debug("INTERVAL-INFO", "server exchange initiated: randomly selecting a server");
+            Server.debug("INFO", "insecure exchange initiated: randomly selecting a server");
             Random r = new Random();
             JSONObject randomServer = new JSONObject();
             int size = Integer.valueOf(Server.serverRecords.size());
@@ -171,12 +171,12 @@ public void exchange() throws IOException {
                 listToRandomServer.put("serverList", Server.serverRecords);
                 DataOutputStream serverOutput = new DataOutputStream(socket.getOutputStream());
                 serverOutput.writeUTF(listToRandomServer.toJSONString());
-                Server.debug("INTERVAL-SEND", listToRandomServer.toJSONString());
+                Server.debug("SEND", "insecure exchange: " + listToRandomServer.toJSONString());
                 DataInputStream serverInput = new DataInputStream(socket.getInputStream());
                 String message =  serverInput.readUTF();
                 JSONParser parser = new JSONParser();
                 JSONObject JSONresponse = (JSONObject) parser.parse(message);
-                Server.debug("INTERVAL-RECEIVE",  JSONresponse.toJSONString());
+                Server.debug("RECEIVE", "insecure exchange: " +  JSONresponse.toJSONString());
                 
                 
                 // Display distinct servers in the serverRecords
@@ -185,11 +185,11 @@ public void exchange() throws IOException {
                 Server.serverRecords = listWithUniqueValues;
                 socket.close();
                  String time = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"));
-                System.out.println(time + " - [INFO] - insecure interval exchange: exchange with " + connect_host + ":" + connect_port + " is successful.");
+                System.out.println(time + " - [INFO] - insecure exchange: exchange with " + connect_host + ":" + connect_port + " is successful.");
                 
             } catch (Exception e) {
                 // If the connection with the random server is not established
-                Server.debug("INTERVAL-INFO","connection with server " + connect_host + ":" + connect_port + " was not successful. ");
+                Server.debug("INFO","insecure exchange: connection with server " + connect_host + ":" + connect_port + " was not successful. ");
                
                 serverTraverser = new JSONObject();
 
@@ -197,7 +197,7 @@ public void exchange() throws IOException {
                     serverTraverser = (JSONObject) Server.serverRecords.get(i);
                     if (serverTraverser.get("hostname").equals(connect_host) && serverTraverser.get("port").equals(connect_port)) {
                         Server.serverRecords.remove(i);
-                Server.debug("INFO","insecure interval exchange: server has been removed");
+              //  Server.debug("INFO","insecure interval exchange: server has been removed");
                
                     }
                 }
@@ -210,7 +210,7 @@ public void exchange() throws IOException {
 
         output.write(response.toJSONString() + '\n');
         output.flush();
-        Server.debug("SECURE-INTERVAL-SEND", response.toJSONString());
+        Server.debug("SEND", "secure exchange: " +  response.toJSONString());
     }
 
  
